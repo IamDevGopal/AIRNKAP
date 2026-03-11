@@ -62,15 +62,16 @@ explicit_package_bases = true
 exclude = "(^venv/|^\\.venv/|^docs/|^pytest-cache-files-)"
 files = [
   "app",
-  "tests",
+  # "tests",  # Re-enable when tests contain .py files
 ]
 
-[[tool.mypy.overrides]]
-module = [
-  "tests.*",
-]
-disallow_untyped_defs = false
-disallow_incomplete_defs = false
+# Re-enable test override when tests are active.
+# [[tool.mypy.overrides]]
+# module = [
+#   "tests.*",
+# ]
+# disallow_untyped_defs = false
+# disallow_incomplete_defs = false
 
 [tool.pytest.ini_options]
 minversion = "8.0"
