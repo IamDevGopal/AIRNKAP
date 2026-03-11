@@ -1,0 +1,19 @@
+{
+  "[markdown]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "vscode.markdown-language-features"
+  },
+  "[python]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    }
+  },
+  "python.testing.pytestEnabled": false,
+  "python.testing.unittestEnabled": false,
+  "editor.rulers": [
+    100
+  ]
+}
