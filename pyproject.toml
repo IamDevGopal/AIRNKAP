@@ -73,6 +73,13 @@ files = [
 # disallow_untyped_defs = false
 # disallow_incomplete_defs = false
 
+[[tool.mypy.overrides]]
+module = [
+  "sqlalchemy.*",
+  "alembic.*",
+]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 minversion = "8.0"
 addopts = "-ra -q -p no:cacheprovider"
