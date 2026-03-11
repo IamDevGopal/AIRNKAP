@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,6 +26,7 @@ class Settings(BaseSettings):
         default="INFO",
         alias="APP_LOG_LEVEL",
     )
+    trusted_hosts: list[str] = Field(default=["localhost", "127.0.0.1"], alias="TRUSTED_HOSTS")
 
     # Database
     database_url: str = Field(default="sqlite:///./data/sqlite/app.db", alias="DATABASE_URL")
@@ -34,6 +35,34 @@ class Settings(BaseSettings):
     # Security
     secret_key: str = Field(default="change-this-in-production", alias="SECRET_KEY")
     access_token_expire_minutes: int = Field(default=60, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
+    cors_allow_origins: list[str] = Field(
+        default=["http://localhost:3000", "http://127.0.0.1:3000"],
+        alias="CORS_ALLOW_ORIGINS",
+    )
+    cors_allow_credentials: bool = Field(default=True, alias="CORS_ALLOW_CREDENTIALS")
+    cors_allow_methods: list[str] = Field(
+        default=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        alias="CORS_ALLOW_METHODS",
+    )
+    cors_allow_headers: list[str] = Field(
+        default=["Authorization", "Content-Type"],
+        alias="CORS_ALLOW_HEADERS",
+    )
+    rate_limit_requests: int = Field(default=60, alias="RATE_LIMIT_REQUESTS")
+    rate_limit_window_seconds: int = Field(default=60, alias="RATE_LIMIT_WINDOW_SECONDS")
+
+    @field_validator(
+        "trusted_hosts",
+        "cors_allow_origins",
+        "cors_allow_methods",
+        "cors_allow_headers",
+        mode="before",
+    )
+    @classmethod
+    def _split_comma_values(cls, value: str | list[str]) -> list[str]:
+        if isinstance(value, str):
+            return [item.strip() for item in value.split(",") if item.strip()]
+        return value
 
     @property
     def is_development(self) -> bool:
@@ -54,6 +83,8 @@ class Settings(BaseSettings):
             "app_log_level": self.app_log_level,
             "database_echo": self.database_echo,
             "access_token_expire_minutes": self.access_token_expire_minutes,
+            "rate_limit_requests": self.rate_limit_requests,
+            "rate_limit_window_seconds": self.rate_limit_window_seconds,
         }
 
 
