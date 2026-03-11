@@ -31,6 +31,9 @@ dmypy.json
 build/
 dist/
 *.egg-info/
+*.db
+*.sqlite3
+data/sqlite/*.db
 
 # Logs and temp files
 *.log
