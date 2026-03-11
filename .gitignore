@@ -13,6 +13,29 @@ htmlcov/
 # Virtual environments
 venv/
 .venv/
+.env
+.env.*
+!.env.example
 
 # Editors
 .idea/
+.vscode/*.code-workspace
+
+# Tool caches
+.pre-commit-cache/
+pytest-cache-files-*/
+.dmypy.json
+dmypy.json
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Logs and temp files
+*.log
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
