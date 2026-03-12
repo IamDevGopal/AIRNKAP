@@ -80,6 +80,8 @@ module = [
   "alembic.*",
   "celery",
   "celery.*",
+  "openpyxl",
+  "openpyxl.*",
   "jwt.*",
   "passlib.*",
 ]
