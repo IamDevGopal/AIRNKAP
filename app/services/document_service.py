@@ -1,4 +1,8 @@
-from fastapi import HTTPException, status
+from pathlib import Path
+import shutil
+from uuid import uuid4
+
+from fastapi import HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.models.document_model import Document
@@ -11,35 +15,88 @@ from app.repositories.document_repository import (
     update_document,
 )
 from app.repositories.project_repository import get_project_by_owner_and_id
-from app.schemas.document_schema import DocumentCreateRequest, DocumentUpdateRequest
+from app.schemas.document_schema import DocumentUpdateRequest
 
 
-def create_user_document(
-    db: Session, current_user: User, payload: DocumentCreateRequest
+def _safe_file_name(filename: str) -> str:
+    return Path(filename).name.replace("\\", "_").replace("/", "_")
+
+
+def _persist_uploaded_file(
+    upload: UploadFile,
+    owner_id: int,
+    workspace_id: int,
+    project_id: int,
+) -> tuple[str, str, int | None, str | None]:
+    safe_original = _safe_file_name(upload.filename or "document.bin")
+    unique_name = f"{uuid4().hex}_{safe_original}"
+    base_dir = Path("data") / "raw_documents" / str(owner_id) / str(workspace_id) / str(project_id)
+    base_dir.mkdir(parents=True, exist_ok=True)
+    file_path = base_dir / unique_name
+
+    with file_path.open("wb") as target:
+        upload.file.seek(0)
+        shutil.copyfileobj(upload.file, target)
+
+    size = file_path.stat().st_size if file_path.exists() else None
+    return safe_original, file_path.as_posix(), size, upload.content_type
+
+
+def create_user_document_from_upload(
+    db: Session,
+    current_user: User,
+    project_id: int,
+    upload: UploadFile,
+    title: str | None = None,
+    source_uri: str | None = None,
 ) -> Document:
-    project = get_project_by_owner_and_id(db, current_user.id, payload.project_id)
+    project = get_project_by_owner_and_id(db, current_user.id, project_id)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Project not found",
         )
 
-    existing = get_document_by_project_and_title(db, project.id, payload.title.strip())
+    if not upload.filename:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded file must have a filename",
+        )
+
+    resolved_title = (title or Path(upload.filename).stem).strip()
+    if not resolved_title:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Document title cannot be empty",
+        )
+
+    existing = get_document_by_project_and_title(db, project.id, resolved_title)
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Document with this title already exists in project",
         )
 
+    file_name, file_path, file_size_bytes, mime_type = _persist_uploaded_file(
+        upload=upload,
+        owner_id=current_user.id,
+        workspace_id=project.workspace_id,
+        project_id=project.id,
+    )
+
     return create_document(
         db=db,
         owner_id=current_user.id,
         workspace_id=project.workspace_id,
         project_id=project.id,
-        title=payload.title.strip(),
-        source_type=payload.source_type,
-        source_uri=payload.source_uri,
-        content_text=payload.content_text,
+        title=resolved_title,
+        file_name=file_name,
+        file_path=file_path,
+        file_size_bytes=file_size_bytes,
+        mime_type=mime_type,
+        source_type="file",
+        source_uri=source_uri,
+        content_text=None,
     )
 
 

@@ -1,17 +1,16 @@
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
 from app.database import get_db
 from app.models.user_model import User
 from app.schemas.document_schema import (
-    DocumentCreateRequest,
     DocumentDeleteResponse,
     DocumentResponse,
     DocumentUpdateRequest,
 )
 from app.services.document_service import (
-    create_user_document,
+    create_user_document_from_upload,
     delete_user_document,
     get_user_document,
     list_user_documents,
@@ -21,13 +20,23 @@ from app.services.document_service import (
 router = APIRouter(prefix="/documents", tags=["documents"])
 
 
-@router.post("", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
-def create_document(
-    payload: DocumentCreateRequest,
+@router.post("/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
+def upload_document(
+    project_id: int = Form(...),
+    title: str | None = Form(default=None),
+    source_uri: str | None = Form(default=None),
+    file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> DocumentResponse:
-    document = create_user_document(db, current_user, payload)
+    document = create_user_document_from_upload(
+        db=db,
+        current_user=current_user,
+        project_id=project_id,
+        upload=file,
+        title=title,
+        source_uri=source_uri,
+    )
     return DocumentResponse.model_validate(document)
 
 

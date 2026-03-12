@@ -34,6 +34,10 @@ class Document(Base):
         nullable=False,
     )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_path: Mapped[str] = mapped_column(String(1000), nullable=False)
+    file_size_bytes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    mime_type: Mapped[str | None] = mapped_column(String(150), nullable=True)
     source_type: Mapped[str] = mapped_column(String(50), nullable=False, server_default="manual")
     source_uri: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     content_text: Mapped[str | None] = mapped_column(String, nullable=True)

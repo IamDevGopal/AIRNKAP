@@ -29,6 +29,10 @@ class DocumentResponse(BaseModel):
     workspace_id: int
     project_id: int
     title: str
+    file_name: str
+    file_path: str
+    file_size_bytes: int | None
+    mime_type: str | None
     source_type: str
     source_uri: str | None
     content_text: str | None
