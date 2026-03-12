@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     Boolean,
@@ -12,6 +13,9 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.connection import Base
+
+if TYPE_CHECKING:
+    from app.models.document_model import Document
 
 
 class Project(Base):
@@ -46,3 +50,4 @@ class Project(Base):
 
     owner = relationship("User", back_populates="projects")
     workspace = relationship("Workspace", back_populates="projects")
+    documents: Mapped[list["Document"]] = relationship("Document", back_populates="project")
