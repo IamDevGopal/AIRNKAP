@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -32,6 +32,26 @@ class Settings(BaseSettings):
     database_url: str = Field(default="sqlite:///./data/sqlite/app.db", alias="DATABASE_URL")
     database_echo: bool = Field(default=False, alias="DATABASE_ECHO")
 
+    # Queue / Worker
+    redis_url: str = Field(default="redis://localhost:6379/0", alias="REDIS_URL")
+    celery_broker_url: str = Field(
+        default="redis://localhost:6379/0",
+        alias="CELERY_BROKER_URL",
+    )
+    celery_result_backend: str = Field(
+        default="redis://localhost:6379/1",
+        alias="CELERY_RESULT_BACKEND",
+    )
+    celery_ingestion_queue: str = Field(
+        default="document_ingestion",
+        alias="CELERY_INGESTION_QUEUE",
+    )
+    celery_ingestion_max_retries: int = Field(default=3, alias="CELERY_INGESTION_MAX_RETRIES")
+    celery_ingestion_retry_delay_seconds: int = Field(
+        default=30,
+        alias="CELERY_INGESTION_RETRY_DELAY_SECONDS",
+    )
+
     # Security
     secret_key: str = Field(default="change-this-in-production", alias="SECRET_KEY")
     jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
@@ -52,11 +72,54 @@ class Settings(BaseSettings):
     rate_limit_requests: int = Field(default=60, alias="RATE_LIMIT_REQUESTS")
     rate_limit_window_seconds: int = Field(default=60, alias="RATE_LIMIT_WINDOW_SECONDS")
 
+    # Upload / Parsing
+    upload_max_file_size_mb: int = Field(default=25, alias="UPLOAD_MAX_FILE_SIZE_MB")
+    upload_allowed_extensions: list[str] = Field(
+        default=["pdf", "docx", "txt", "json", "csv", "xlsx"],
+        alias="UPLOAD_ALLOWED_EXTENSIONS",
+    )
+    upload_allowed_mime_types: list[str] = Field(
+        default=[
+            "application/pdf",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "text/plain",
+            "application/json",
+            "text/csv",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ],
+        alias="UPLOAD_ALLOWED_MIME_TYPES",
+    )
+
+    # Chunking / Embeddings
+    chunk_size_tokens: int = Field(default=800, alias="CHUNK_SIZE_TOKENS")
+    chunk_overlap_tokens: int = Field(default=120, alias="CHUNK_OVERLAP_TOKENS")
+    embedding_model_name: str = Field(
+        default="text-embedding-3-large",
+        alias="EMBEDDING_MODEL_NAME",
+    )
+    embedding_model_version: str = Field(default="v1", alias="EMBEDDING_MODEL_VERSION")
+    azure_openai_embedding_deployment: str = Field(
+        default="text-embedding-3-large",
+        alias="AZURE_OPENAI_EMBEDDING_DEPLOYMENT",
+    )
+
+    # Vector Store (Pinecone)
+    pinecone_api_key: str = Field(
+        default="",
+        alias="PINECONE_API_KEY",
+        validation_alias=AliasChoices("PINECONE_API_KEY", "PINECODE_DB_API_KEY"),
+    )
+    pinecone_index_name: str = Field(default="airnkap-docs", alias="PINECONE_INDEX_NAME")
+    pinecone_namespace: str = Field(default="default", alias="PINECONE_NAMESPACE")
+    pinecone_environment: str = Field(default="us-east-1", alias="PINECONE_ENVIRONMENT")
+
     @field_validator(
         "trusted_hosts",
         "cors_allow_origins",
         "cors_allow_methods",
         "cors_allow_headers",
+        "upload_allowed_extensions",
+        "upload_allowed_mime_types",
         mode="before",
     )
     @classmethod
@@ -83,10 +146,23 @@ class Settings(BaseSettings):
             "app_port": self.app_port,
             "app_log_level": self.app_log_level,
             "database_echo": self.database_echo,
+            "redis_url": self.redis_url,
+            "celery_broker_url": self.celery_broker_url,
+            "celery_result_backend": self.celery_result_backend,
+            "celery_ingestion_queue": self.celery_ingestion_queue,
             "jwt_algorithm": self.jwt_algorithm,
             "access_token_expire_minutes": self.access_token_expire_minutes,
             "rate_limit_requests": self.rate_limit_requests,
             "rate_limit_window_seconds": self.rate_limit_window_seconds,
+            "upload_max_file_size_mb": self.upload_max_file_size_mb,
+            "chunk_size_tokens": self.chunk_size_tokens,
+            "chunk_overlap_tokens": self.chunk_overlap_tokens,
+            "embedding_model_name": self.embedding_model_name,
+            "embedding_model_version": self.embedding_model_version,
+            "azure_openai_embedding_deployment": self.azure_openai_embedding_deployment,
+            "pinecone_index_name": self.pinecone_index_name,
+            "pinecone_namespace": self.pinecone_namespace,
+            "pinecone_environment": self.pinecone_environment,
         }
 
 
