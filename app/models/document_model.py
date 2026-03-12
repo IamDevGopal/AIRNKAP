@@ -42,6 +42,22 @@ class Document(Base):
     source_uri: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     content_text: Mapped[str | None] = mapped_column(String, nullable=True)
     status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="active")
+    ingestion_status: Mapped[str] = mapped_column(
+        String(30),
+        nullable=False,
+        server_default="queued",
+    )
+    ingestion_error: Mapped[str | None] = mapped_column(String(3000), nullable=True)
+    ingestion_started_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    ingestion_completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    content_hash: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    chunk_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    embedding_model: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    embedding_version: Mapped[str | None] = mapped_column(String(60), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -57,3 +73,4 @@ class Document(Base):
     owner = relationship("User", back_populates="documents")
     workspace = relationship("Workspace", back_populates="documents")
     project = relationship("Project", back_populates="documents")
+    chunks = relationship("DocumentChunk", back_populates="document", cascade="all, delete-orphan")

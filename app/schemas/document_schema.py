@@ -3,6 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.schemas.document_ingestion_schema import DocumentIngestionStatus
+
 DocumentSourceType = Literal["manual", "url", "file"]
 DocumentStatus = Literal["active", "archived", "deleted"]
 
@@ -37,6 +39,14 @@ class DocumentResponse(BaseModel):
     source_uri: str | None
     content_text: str | None
     status: str
+    ingestion_status: DocumentIngestionStatus
+    ingestion_error: str | None
+    ingestion_started_at: datetime | None
+    ingestion_completed_at: datetime | None
+    content_hash: str | None
+    chunk_count: int
+    embedding_model: str | None
+    embedding_version: str | None
     created_at: datetime
     updated_at: datetime
 

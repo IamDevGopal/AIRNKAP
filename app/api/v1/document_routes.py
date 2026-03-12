@@ -1,9 +1,16 @@
+from typing import cast
+
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
 from app.database import get_db
 from app.models.user_model import User
+from app.schemas.document_ingestion_schema import (
+    DocumentChunkResponse,
+    DocumentIngestionStatus,
+    DocumentIngestionStatusResponse,
+)
 from app.schemas.document_schema import (
     DocumentDeleteResponse,
     DocumentResponse,
@@ -13,6 +20,8 @@ from app.services.document_service import (
     create_user_document_from_upload,
     delete_user_document,
     get_user_document,
+    get_user_document_ingestion_status,
+    list_user_document_chunks,
     list_user_documents,
     update_user_document,
 )
@@ -79,3 +88,41 @@ def delete_document(
 ) -> DocumentDeleteResponse:
     delete_user_document(db, current_user, document_id)
     return DocumentDeleteResponse(message="Document deleted successfully")
+
+
+@router.get("/{document_id}/status", response_model=DocumentIngestionStatusResponse)
+def get_document_status(
+    document_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> DocumentIngestionStatusResponse:
+    document = get_user_document_ingestion_status(db, current_user, document_id)
+    return DocumentIngestionStatusResponse(
+        document_id=document.id,
+        ingestion_status=cast(DocumentIngestionStatus, document.ingestion_status),
+        ingestion_error=document.ingestion_error,
+        ingestion_started_at=document.ingestion_started_at,
+        ingestion_completed_at=document.ingestion_completed_at,
+        chunk_count=document.chunk_count,
+        embedding_model=document.embedding_model,
+        embedding_version=document.embedding_version,
+        updated_at=document.updated_at,
+    )
+
+
+@router.get("/{document_id}/chunks", response_model=list[DocumentChunkResponse])
+def list_document_chunks(
+    document_id: int,
+    limit: int = Query(default=200, ge=1, le=1000),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[DocumentChunkResponse]:
+    chunks = list_user_document_chunks(
+        db=db,
+        current_user=current_user,
+        document_id=document_id,
+        limit=limit,
+        offset=offset,
+    )
+    return [DocumentChunkResponse.model_validate(chunk) for chunk in chunks]

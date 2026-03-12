@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 import shutil
 from uuid import uuid4
@@ -5,17 +6,21 @@ from uuid import uuid4
 from fastapi import HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
+from app.models.document_chunk_model import DocumentChunk
 from app.models.document_model import Document
 from app.models.user_model import User
 from app.repositories.document_repository import (
     create_document,
     get_document_by_owner_and_id,
     get_document_by_project_and_title,
+    list_document_chunks_by_document_id,
     list_documents_by_owner,
     update_document,
 )
 from app.repositories.project_repository import get_project_by_owner_and_id
 from app.schemas.document_schema import DocumentUpdateRequest
+
+logger = logging.getLogger(__name__)
 
 
 def _safe_file_name(filename: str) -> str:
@@ -84,7 +89,7 @@ def create_user_document_from_upload(
         project_id=project.id,
     )
 
-    return create_document(
+    document = create_document(
         db=db,
         owner_id=current_user.id,
         workspace_id=project.workspace_id,
@@ -98,6 +103,18 @@ def create_user_document_from_upload(
         source_uri=source_uri,
         content_text=None,
     )
+
+    _enqueue_document_ingestion_job(document.id)
+    return document
+
+
+def _enqueue_document_ingestion_job(document_id: int) -> None:
+    try:
+        from app.tasks.document_ingestion_tasks import ingest_document
+
+        ingest_document.delay(document_id)
+    except Exception as exc:
+        logger.exception("Failed to enqueue ingestion job for document_id=%s: %s", document_id, exc)
 
 
 def list_user_documents(
@@ -162,3 +179,25 @@ def delete_user_document(db: Session, current_user: User, document_id: int) -> N
     document = get_user_document(db, current_user, document_id)
     document.status = "deleted"
     update_document(db, document)
+
+
+def get_user_document_ingestion_status(
+    db: Session, current_user: User, document_id: int
+) -> Document:
+    return get_user_document(db, current_user, document_id)
+
+
+def list_user_document_chunks(
+    db: Session,
+    current_user: User,
+    document_id: int,
+    limit: int = 200,
+    offset: int = 0,
+) -> list[DocumentChunk]:
+    document = get_user_document(db, current_user, document_id)
+    return list_document_chunks_by_document_id(
+        db=db,
+        document_id=document.id,
+        limit=limit,
+        offset=offset,
+    )
