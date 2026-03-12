@@ -10,7 +10,9 @@ from app.repositories.document_repository import (
     update_document_ingestion_fields,
 )
 from app.services.chunking_service import chunk_text_by_tokens
+from app.services.embedding_service import generate_embeddings
 from app.services.file_parser_service import extract_text_from_file
+from app.services.vector_index_service import upsert_document_vectors
 from app.tasks.celery_app import celery_app
 
 settings = get_settings()
@@ -58,6 +60,14 @@ def ingest_document(self: Any, document_id: int) -> None:
             db=db,
             document_id=document.id,
             chunks=[(chunk.chunk_index, chunk.chunk_text, chunk.token_count) for chunk in chunks],
+        )
+
+        chunk_texts = [chunk.chunk_text for chunk in chunks]
+        embeddings = generate_embeddings(chunk_texts)
+        upsert_document_vectors(
+            document=document,
+            chunks=chunks,
+            embeddings=embeddings,
         )
 
         content_hash = hashlib.sha256(parsed_text.encode("utf-8")).hexdigest()

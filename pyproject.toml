@@ -87,6 +87,13 @@ module = [
 ]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = [
+  "pinecone",
+  "pinecone.*",
+]
+disable_error_code = ["import-untyped"]
+
 [tool.pytest.ini_options]
 minversion = "8.0"
 addopts = "-ra -q -p no:cacheprovider"

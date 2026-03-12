@@ -98,6 +98,18 @@ class Settings(BaseSettings):
         alias="EMBEDDING_MODEL_NAME",
     )
     embedding_model_version: str = Field(default="v1", alias="EMBEDDING_MODEL_VERSION")
+    embedding_batch_size: int = Field(default=32, alias="EMBEDDING_BATCH_SIZE")
+    embedding_request_timeout_seconds: int = Field(
+        default=30,
+        alias="EMBEDDING_REQUEST_TIMEOUT_SECONDS",
+    )
+    embedding_max_retries: int = Field(default=3, alias="EMBEDDING_MAX_RETRIES")
+    azure_openai_endpoint: str = Field(default="", alias="AZURE_OPENAI_ENDPOINT")
+    azure_openai_api_key: str = Field(default="", alias="AZURE_OPENAI_API_KEY")
+    azure_openai_api_version: str = Field(
+        default="2024-02-15-preview",
+        alias="AZURE_OPENAI_API_VERSION",
+    )
     azure_openai_embedding_deployment: str = Field(
         default="text-embedding-3-large",
         alias="AZURE_OPENAI_EMBEDDING_DEPLOYMENT",
@@ -112,6 +124,7 @@ class Settings(BaseSettings):
     pinecone_index_name: str = Field(default="airnkap-docs", alias="PINECONE_INDEX_NAME")
     pinecone_namespace: str = Field(default="default", alias="PINECONE_NAMESPACE")
     pinecone_environment: str = Field(default="us-east-1", alias="PINECONE_ENVIRONMENT")
+    pinecone_upsert_batch_size: int = Field(default=100, alias="PINECONE_UPSERT_BATCH_SIZE")
 
     @field_validator(
         "trusted_hosts",
@@ -159,10 +172,16 @@ class Settings(BaseSettings):
             "chunk_overlap_tokens": self.chunk_overlap_tokens,
             "embedding_model_name": self.embedding_model_name,
             "embedding_model_version": self.embedding_model_version,
+            "embedding_batch_size": self.embedding_batch_size,
+            "embedding_request_timeout_seconds": self.embedding_request_timeout_seconds,
+            "embedding_max_retries": self.embedding_max_retries,
+            "azure_openai_endpoint": self.azure_openai_endpoint,
+            "azure_openai_api_version": self.azure_openai_api_version,
             "azure_openai_embedding_deployment": self.azure_openai_embedding_deployment,
             "pinecone_index_name": self.pinecone_index_name,
             "pinecone_namespace": self.pinecone_namespace,
             "pinecone_environment": self.pinecone_environment,
+            "pinecone_upsert_batch_size": self.pinecone_upsert_batch_size,
         }
 
 
