@@ -34,6 +34,7 @@ class Settings(BaseSettings):
 
     # Security
     secret_key: str = Field(default="change-this-in-production", alias="SECRET_KEY")
+    jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
     access_token_expire_minutes: int = Field(default=60, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
     cors_allow_origins: list[str] = Field(
         default=["http://localhost:3000", "http://127.0.0.1:3000"],
@@ -82,6 +83,7 @@ class Settings(BaseSettings):
             "app_port": self.app_port,
             "app_log_level": self.app_log_level,
             "database_echo": self.database_echo,
+            "jwt_algorithm": self.jwt_algorithm,
             "access_token_expire_minutes": self.access_token_expire_minutes,
             "rate_limit_requests": self.rate_limit_requests,
             "rate_limit_window_seconds": self.rate_limit_window_seconds,
