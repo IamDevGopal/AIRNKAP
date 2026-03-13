@@ -1,4 +1,4 @@
-﻿# AI Research & Knowledge Automation Platform
+# AI Research & Knowledge Automation Platform
 
 ## Professional Project Structure
 
@@ -76,40 +76,43 @@ ai-research-platform/
 |   |   |-- project_service.py
 |   |   |-- document_service.py
 |   |   |-- research_task_service.py
-|   |   |-- research_service.py
-|   |   |-- rag_service.py
-|   |   |-- embedding_service.py
-|   |   |-- vector_index_service.py
-|   |   |-- chunking_service.py
-|   |   `-- llm_service.py
-|   |-- agents/
-|   |   |-- orchestrator/agent_manager.py
-|   |   |-- research_agent/agent.py
-|   |   |-- summarizer_agent/agent.py
-|   |   |-- knowledge_agent/agent.py
-|   |   `-- report_agent/agent.py
-|   |-- llm/
-|   |   |-- azure_openai_client.py
-|   |   |-- embeddings.py
-|   |   `-- prompt_templates.py
-|   |-- rag/
-|   |   |-- pipeline.py
-|   |   |-- retriever.py
-|   |   `-- context_builder.py
-|   |-- vectorstore/
-|   |   |-- vector_client.py
-|   |   `-- indexing.py
-|   |-- mcp/
-|   |   |-- fastmcp_server.py
-|   |   `-- tools_registry.py
+|   |   `-- research_service.py
+|   |-- ai/
+|   |   |-- llm/
+|   |   |   |-- clients/
+|   |   |   |   `-- azure_openai_client.py
+|   |   |   `-- wrappers/
+|   |   |       `-- embeddings.py
+|   |   |-- rag/
+|   |   |   |-- ingestion/
+|   |   |   |   |-- parser.py
+|   |   |   |   |-- chunking.py
+|   |   |   |   `-- ingestion_pipeline.py
+|   |   |   `-- retrieval/
+|   |   |       |-- retriever.py
+|   |   |       `-- context_builder.py
+|   |   |-- vectorstore/
+|   |   |   |-- clients/
+|   |   |   |   `-- pinecone_client.py
+|   |   |   |-- indexing/
+|   |   |   |   `-- upsert.py
+|   |   |   `-- retrieval/
+|   |   |       `-- search.py
+|   |   |-- agents/
+|   |   |   |-- orchestrator/agent_manager.py
+|   |   |   |-- research_agent/agent.py
+|   |   |   |-- summarizer_agent/agent.py
+|   |   |   |-- knowledge_agent/agent.py
+|   |   |   `-- report_agent/agent.py
+|   |   `-- mcp/
+|   |       |-- fastmcp_server.py
+|   |       `-- tools_registry.py
 |   |-- tasks/
 |   |   |-- async_jobs.py
 |   |   |-- background_workers.py
 |   |   |-- celery_app.py
 |   |   `-- document_ingestion_tasks.py
 |   `-- utils/
-|       |-- text_processing.py
-|       |-- chunking.py
 |       `-- helpers.py
 |-- data/
 |   |-- raw_documents/
@@ -159,114 +162,88 @@ ai-research-platform/
 `-- requirements-dev.txt
 ```
 
-## Structure Governance (Must Follow)
-
-Is section ka purpose hai decide karna ki code exactly kis module me jayega.
-
-### 1) Layer Ownership Rules
+## Structure Governance
 
 1. `api/`
-- Only HTTP layer (request parsing, response mapping, dependency wiring).
-- Business logic yahan nahi.
+- HTTP layer only.
+- Request parsing, response mapping, dependency wiring.
 
 2. `services/`
-- Domain/business orchestration only (auth, users, workspace, project, documents, tasks, reports).
-- Generic technical utilities ka duplicate wrapper yahan nahi banana.
+- Domain and business orchestration only.
+- AI clients, vector operations, chunking, embedding wrappers yahan nahi.
 
 3. `repositories/`
-- DB read/write queries only.
-- No prompt/model/vector/LLM calls.
+- DB access only.
+- No LLM, vectorstore, prompt, or RAG orchestration.
 
 4. `models/`
 - ORM entities and relations only.
 
 5. `schemas/`
-- Request/response contracts only (Pydantic models).
+- Pydantic request/response contracts only.
 
-6. `llm/`
-- Model provider clients and wrappers only (Azure/OpenAI chat/embeddings).
-- No business workflow orchestration.
+6. `app/ai/llm/`
+- Provider clients and model wrappers.
+- Example: Azure OpenAI embeddings, future chat/completions.
 
-7. `vectorstore/`
-- Vector DB specific client/query/indexing operations only.
-- No prompt/model routing/business task logic.
+7. `app/ai/rag/`
+- Retrieval and ingestion orchestration.
+- Ingestion parsing/chunking and retrieval context building both yahin.
 
-8. `rag/`
-- Retrieval + context building + RAG orchestration.
-- Calls `llm/` and `vectorstore/`, but provider-specific internals hold nahi karega.
+8. `app/ai/vectorstore/`
+- Vector DB specific clients and operations.
+- Upsert, search, metadata filters.
 
-9. `tasks/`
-- Background execution entrypoints (Celery jobs).
-- Pipeline steps invoke `rag/llm/vectorstore/repositories/services` as needed.
+9. `app/ai/agents/`
+- Multi-agent workflow layer.
+- Research, summarization, reporting orchestration.
 
-10. `utils/`
-- Pure reusable helpers (stateless/generic utilities).
-- Domain-specific orchestration yahan nahi.
+10. `app/ai/mcp/`
+- MCP tool server and tool registry.
 
-11. `agents/`
-- Multi-agent orchestration (later phases), not base ingestion pipeline.
+11. `tasks/`
+- Background execution entrypoints.
+- Workers orchestrate `app/ai/*` + repositories/services.
 
-12. `mcp/`
-- Tool server + tool registry integration for agent/tool invocation (later phases).
+12. `utils/`
+- Generic stateless helpers only.
 
-### 2) Golden Runtime Flow
+## Golden Runtime Flow
 
 1. API flow:
 `api -> services -> repositories/models`
 
-2. Ingestion async flow:
-`api upload -> task enqueue -> tasks -> rag -> llm + vectorstore -> repositories`
+2. Ingestion flow:
+`api upload -> task enqueue -> tasks -> app/ai/rag -> app/ai/llm + app/ai/vectorstore -> repositories`
 
 3. Query flow:
-`api query -> services -> rag(retriever/context) -> llm -> response`
+`api query -> services -> app/ai/rag(retrieval/context) -> app/ai/llm -> response`
 
-### 3) Prompt and Script Ownership
+## Prompt and Script Ownership
 
 1. `prompts/`
 - Reusable prompt source of truth.
-- Prompt text hardcode karne ke bajay yahan maintain karo.
+- Runtime prompt text random files me hardcode nahi karna.
 
 2. `scripts/`
-- Operational utilities only (backfill, one-off reindex, batch jobs).
-- Runtime API business logic scripts me place mat karo.
+- Operational and one-off utilities only.
+- Runtime API business logic scripts me nahi jayegi.
 
-## Placement Matrix (Quick Decision Guide)
+## Placement Matrix
 
-1. Azure/OpenAI HTTP request code -> `app/llm/`
-2. Pinecone upsert/query/filter code -> `app/vectorstore/`
-3. Retrieve + context pack + answer orchestration -> `app/rag/`
-4. Workspace/project/document policy checks -> `app/services/`
-5. DB transaction/query code -> `app/repositories/`
-6. File parsing/chunk/token helpers -> `app/utils/` (or `rag/` if pipeline-specific)
-7. Async worker entrypoint -> `app/tasks/`
+1. Azure/OpenAI HTTP call code -> `app/ai/llm/`
+2. Embedding/chat wrappers -> `app/ai/llm/`
+3. File parsing and chunking for ingestion -> `app/ai/rag/ingestion/`
+4. Retrieval and context packing -> `app/ai/rag/retrieval/`
+5. Pinecone upsert/search/filter logic -> `app/ai/vectorstore/`
+6. Workspace/project/document policy checks -> `app/services/`
+7. DB transaction/query code -> `app/repositories/`
+8. Background job entrypoints -> `app/tasks/`
 
-## Anti-Patterns (Avoid)
+## Anti-Patterns
 
 1. Same logic ka duplicate wrapper multiple folders me.
-2. `services/` me provider-specific HTTP client code rakhna.
-3. `rag/` me direct SQL/ORM query writing.
+2. `services/` me provider-specific HTTP client code.
+3. `app/ai/rag/` me direct SQL/ORM query writing.
 4. `repositories/` me LLM or vectorstore calls.
-5. Prompt strings ko random files me hardcode karna.
-
-## Recommended Canonical Sub-Layout (Evolution)
-
-Current tree valid hai, lekin growth ke liye ye canonical split follow karein:
-
-1. `app/llm/`
-- `clients/` (provider clients)
-- `wrappers/` (chat/embeddings wrappers)
-- `router/` (optional model selection)
-
-2. `app/vectorstore/`
-- `clients/`
-- `indexing/`
-- `retrieval/`
-
-3. `app/rag/`
-- `pipeline.py`
-- `retriever.py`
-- `context_builder.py`
-- `prompt_loader.py` (load from root `prompts/`)
-
-Note:
-- Ye evolution stepwise hona chahiye; unnecessary early over-engineering avoid karein.
+5. Prompt strings ko multiple random files me hardcode karna.

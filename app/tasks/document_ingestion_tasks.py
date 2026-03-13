@@ -1,17 +1,17 @@
 from datetime import UTC, datetime
 from typing import Any
 
+from app.ai.llm.wrappers.embeddings import generate_embeddings
+from app.ai.rag.ingestion.ingestion_pipeline import build_document_chunks
+from app.ai.vectorstore.indexing.upsert import upsert_document_vectors
 from app.config import get_settings
 from app.database import SessionLocal
-from app.llm.embeddings import generate_embeddings
-from app.rag.pipeline import build_document_chunks
 from app.repositories.document_repository import (
     get_document_by_id,
     replace_document_chunks,
     update_document_ingestion_fields,
 )
 from app.tasks.celery_app import celery_app
-from app.vectorstore.indexing import upsert_document_vectors
 
 settings = get_settings()
 

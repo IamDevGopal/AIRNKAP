@@ -89,19 +89,22 @@ Current ingestion ke baad next value-delivering phase:
 2. `app/services/`
 - business orchestration layer
 
-3. `app/rag/`
+3. `app/ai/rag/`
 - retrieval/context pipeline logic
 
-4. `app/llm/`
+4. `app/ai/llm/`
 - model/provider communication (Azure OpenAI, prompts, wrappers)
 
-5. `app/vectorstore/`
+5. `app/ai/vectorstore/`
 - vector DB operations (upsert/query)
 
-6. `app/tasks/`
+6. `app/ai/agents/` + `app/ai/mcp/`
+- AI orchestration and tool integration layers
+
+7. `app/tasks/`
 - background async jobs (Celery workers)
 
-7. `app/repositories/` + `app/models/`
+8. `app/repositories/` + `app/models/`
 - persistence/data access
 
 ### Two primary system loops

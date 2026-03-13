@@ -63,11 +63,14 @@
    - `embedding_model`, `embedding_version`
 9. On any failure, set `failed` + persist error message.
 
-## Implemented Service Modules
-- `app/services/file_parser_service.py`
-- `app/services/chunking_service.py`
-- `app/services/embedding_service.py`
-- `app/services/vector_index_service.py`
+## Implemented AI Modules
+- `app/ai/rag/ingestion/parser.py`
+- `app/ai/rag/ingestion/chunking.py`
+- `app/ai/rag/ingestion/ingestion_pipeline.py`
+- `app/ai/llm/clients/azure_openai_client.py`
+- `app/ai/llm/wrappers/embeddings.py`
+- `app/ai/vectorstore/clients/pinecone_client.py`
+- `app/ai/vectorstore/indexing/upsert.py`
 - `app/tasks/document_ingestion_tasks.py`
 
 ## Key Environment Variables
