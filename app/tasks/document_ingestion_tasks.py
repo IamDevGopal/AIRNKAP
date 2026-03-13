@@ -1,19 +1,17 @@
 from datetime import UTC, datetime
-import hashlib
 from typing import Any
 
 from app.config import get_settings
 from app.database import SessionLocal
+from app.llm.embeddings import generate_embeddings
+from app.rag.pipeline import build_document_chunks
 from app.repositories.document_repository import (
     get_document_by_id,
     replace_document_chunks,
     update_document_ingestion_fields,
 )
-from app.services.chunking_service import chunk_text_by_tokens
-from app.services.embedding_service import generate_embeddings
-from app.services.file_parser_service import extract_text_from_file
-from app.services.vector_index_service import upsert_document_vectors
 from app.tasks.celery_app import celery_app
+from app.vectorstore.indexing import upsert_document_vectors
 
 settings = get_settings()
 
@@ -45,16 +43,7 @@ def ingest_document(self: Any, document_id: int) -> None:
             ingestion_completed_at=None,
         )
 
-        parsed_text = extract_text_from_file(document.file_path)
-        if not parsed_text.strip():
-            raise ValueError("No parseable text extracted from document")
-
-        chunks = chunk_text_by_tokens(
-            parsed_text,
-            chunk_size_tokens=settings.chunk_size_tokens,
-            chunk_overlap_tokens=settings.chunk_overlap_tokens,
-            model_name=settings.embedding_model_name,
-        )
+        _, chunks, content_hash = build_document_chunks(document.file_path)
 
         replace_document_chunks(
             db=db,
@@ -70,7 +59,6 @@ def ingest_document(self: Any, document_id: int) -> None:
             embeddings=embeddings,
         )
 
-        content_hash = hashlib.sha256(parsed_text.encode("utf-8")).hexdigest()
         update_document_ingestion_fields(
             db=db,
             document=document,
