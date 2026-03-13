@@ -6,7 +6,7 @@
 - Worker runtime: Celery (separate Python process)
 - App DB: SQLite (current), Postgres-ready later
 - Vector store: Pinecone
-- Embeddings provider: Azure OpenAI
+- Embeddings provider: provider-switchable (`openai` default, `azure_openai` supported)
 
 ## Implemented Phases
 - Phase A: async ingestion skeleton + status polling
@@ -67,7 +67,6 @@
 - `app/ai/rag/ingestion/loaders.py`
 - `app/ai/rag/ingestion/splitters.py`
 - `app/ai/rag/ingestion/ingestion_pipeline.py`
-- `app/ai/llm/clients/azure_openai_client.py`
 - `app/ai/llm/wrappers/embeddings.py`
 - `app/ai/vectorstore/clients/pinecone_client.py`
 - `app/ai/vectorstore/indexing/upsert.py`
@@ -87,6 +86,10 @@
 - Chunking:
   - `CHUNK_SIZE_TOKENS`
   - `CHUNK_OVERLAP_TOKENS`
+- Embedding provider selection:
+  - `EMBEDDING_PROVIDER`
+  - `OPENAI_API_KEY`
+  - `OPENAI_BASE_URL`
 - Azure embeddings:
   - `AZURE_OPENAI_ENDPOINT`
   - `AZURE_OPENAI_API_KEY`
@@ -260,9 +263,13 @@
   - `get_embeddings_client()`
 - Used package:
   - `langchain-openai`
-- Used component:
+- Used components:
+  - `OpenAIEmbeddings`
   - `AzureOpenAIEmbeddings`
 - Settings used:
+  - `EMBEDDING_PROVIDER`
+  - `OPENAI_API_KEY`
+  - `OPENAI_BASE_URL`
   - `AZURE_OPENAI_ENDPOINT`
   - `AZURE_OPENAI_API_KEY`
   - `AZURE_OPENAI_API_VERSION`
@@ -272,15 +279,21 @@
   - `EMBEDDING_REQUEST_TIMEOUT_SECONDS`
   - `EMBEDDING_MAX_RETRIES`
 
-### 14. Why `AzureOpenAIEmbeddings` is used
-- Ye LangChain ka Azure OpenAI compatible embedding wrapper hai.
+### 14. Why provider-switchable LangChain embeddings are used
+- Runtime config `EMBEDDING_PROVIDER` decide karta hai kaunsa wrapper use hoga.
+- `openai` path:
+  - `OpenAIEmbeddings`
+  - direct OpenAI API key based access
+- `azure_openai` path:
+  - `AzureOpenAIEmbeddings`
+  - Azure endpoint + deployment based access
 - Is wrapper ke through:
   - auth
-  - deployment
+  - provider-specific connection details
   - batching
   - retry
   - timeout
-  ek standardized object me mil jate hain.
+  standardized object me mil jate hain.
 - Worker khud raw HTTP calls nahi likhta.
 
 ### 15. Vector store upsert happens
@@ -362,7 +375,7 @@
 - `app/ai/rag/ingestion/ingestion_pipeline.py`
   - parsed text + chunks + hash assembly
 - `app/ai/llm/wrappers/embeddings.py`
-  - LangChain Azure embedding client
+  - provider-switchable LangChain embedding client
 - `app/ai/vectorstore/indexing/upsert.py`
   - LangChain Pinecone upsert
 - `app/ai/rag/ingestion/parser.py`

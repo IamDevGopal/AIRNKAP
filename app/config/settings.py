@@ -26,6 +26,10 @@ class Settings(BaseSettings):
         default="INFO",
         alias="APP_LOG_LEVEL",
     )
+    embedding_provider: Literal["openai", "azure_openai"] = Field(
+        default="openai",
+        alias="EMBEDDING_PROVIDER",
+    )
     trusted_hosts: list[str] = Field(default=["localhost", "127.0.0.1"], alias="TRUSTED_HOSTS")
 
     # Database
@@ -104,6 +108,8 @@ class Settings(BaseSettings):
         alias="EMBEDDING_REQUEST_TIMEOUT_SECONDS",
     )
     embedding_max_retries: int = Field(default=3, alias="EMBEDDING_MAX_RETRIES")
+    openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
+    openai_base_url: str = Field(default="https://api.openai.com/v1", alias="OPENAI_BASE_URL")
     azure_openai_endpoint: str = Field(default="", alias="AZURE_OPENAI_ENDPOINT")
     azure_openai_api_key: str = Field(default="", alias="AZURE_OPENAI_API_KEY")
     azure_openai_api_version: str = Field(
@@ -158,6 +164,7 @@ class Settings(BaseSettings):
             "app_host": self.app_host,
             "app_port": self.app_port,
             "app_log_level": self.app_log_level,
+            "embedding_provider": self.embedding_provider,
             "database_echo": self.database_echo,
             "redis_url": self.redis_url,
             "celery_broker_url": self.celery_broker_url,
@@ -175,6 +182,7 @@ class Settings(BaseSettings):
             "embedding_batch_size": self.embedding_batch_size,
             "embedding_request_timeout_seconds": self.embedding_request_timeout_seconds,
             "embedding_max_retries": self.embedding_max_retries,
+            "openai_base_url": self.openai_base_url,
             "azure_openai_endpoint": self.azure_openai_endpoint,
             "azure_openai_api_version": self.azure_openai_api_version,
             "azure_openai_embedding_deployment": self.azure_openai_embedding_deployment,

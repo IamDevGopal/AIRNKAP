@@ -80,7 +80,7 @@ ai-research-platform/
 |   |-- ai/
 |   |   |-- llm/
 |   |   |   |-- clients/
-|   |   |   |   `-- azure_openai_client.py
+|   |   |   |   `-- __init__.py
 |   |   |   `-- wrappers/
 |   |   |       `-- embeddings.py
 |   |   |-- rag/
