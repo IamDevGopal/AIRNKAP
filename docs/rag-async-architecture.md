@@ -12,6 +12,7 @@
 - Phase A: async ingestion skeleton + status polling
 - Phase B: parsing + chunking + chunk persistence
 - Phase C: embeddings + Pinecone upsert
+- Phase C.1: framework-centric ingestion path made canonical
 
 ## Data Model (Implemented)
 ### `documents` ingestion fields
@@ -43,17 +44,15 @@
 ## Worker Pipeline
 1. Pick job from `document_ingestion` queue.
 2. Mark document `processing` with `ingestion_started_at`.
-3. Parse file text from disk:
-   - PDF (`pypdf`)
-   - DOCX (`python-docx`)
-   - TXT / JSON / CSV (stdlib)
-   - XLSX (`openpyxl`)
-4. Chunk text via token-aware chunker (`tiktoken`) using configured size/overlap.
+3. Load document content from disk using LangChain loaders:
+   - PDF (`PyPDFLoader`)
+   - DOCX (`Docx2txtLoader`)
+   - TXT / JSON (`TextLoader`)
+   - CSV (`CSVLoader`)
+   - XLSX (`UnstructuredExcelLoader`)
+4. Build chunks with LangChain text splitter (`RecursiveCharacterTextSplitter`).
 5. Replace rows in `document_chunks` for the document.
-6. Generate embeddings via Azure OpenAI wrapper:
-   - batching
-   - request timeout
-   - retry with exponential backoff (`tenacity`)
+6. Generate embeddings with LangChain Azure OpenAI wrapper and upsert through LangChain Pinecone adapter.
 7. Upsert vectors to Pinecone with metadata:
    - `document_id`, `project_id`, `workspace_id`, `owner_id`
    - `chunk_index`, `token_count`
@@ -65,13 +64,18 @@
 
 ## Implemented AI Modules
 - `app/ai/rag/ingestion/parser.py`
-- `app/ai/rag/ingestion/chunking.py`
+- `app/ai/rag/ingestion/loaders.py`
+- `app/ai/rag/ingestion/splitters.py`
 - `app/ai/rag/ingestion/ingestion_pipeline.py`
 - `app/ai/llm/clients/azure_openai_client.py`
 - `app/ai/llm/wrappers/embeddings.py`
 - `app/ai/vectorstore/clients/pinecone_client.py`
 - `app/ai/vectorstore/indexing/upsert.py`
 - `app/tasks/document_ingestion_tasks.py`
+
+## Runtime Policy
+- Active ingestion runtime is framework-centric.
+- `parser.py` is preserved only as backup reference and is not used in the current worker path.
 
 ## Key Environment Variables
 - Queue:

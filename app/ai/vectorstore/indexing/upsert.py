@@ -1,10 +1,5 @@
-from collections.abc import Iterable
-from typing import Any
-
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
-
-from app.ai.rag.ingestion.chunking import TextChunk
-from app.ai.vectorstore.clients.pinecone_client import get_pinecone_index
+from app.ai.llm.wrappers.embeddings import get_embeddings_client
+from app.ai.rag.ingestion.splitters import TextChunk
 from app.config import get_settings
 from app.models.document_model import Document
 
@@ -15,50 +10,41 @@ def upsert_document_vectors(
     *,
     document: Document,
     chunks: list[TextChunk],
-    embeddings: list[list[float]],
 ) -> None:
-    if len(chunks) != len(embeddings):
-        raise ValueError("chunks and embeddings length mismatch")
     if not chunks:
         return
 
-    vectors = []
-    for chunk, embedding in zip(chunks, embeddings, strict=True):
-        vectors.append(
+    try:
+        from langchain_pinecone import PineconeVectorStore
+    except ImportError as exc:
+        raise RuntimeError(
+            "LangChain Pinecone dependencies are missing. Install langchain-pinecone first."
+        ) from exc
+
+    embeddings = get_embeddings_client()
+    vector_store = PineconeVectorStore(
+        index_name=settings.pinecone_index_name,
+        embedding=embeddings,
+        namespace=settings.pinecone_namespace,
+        pinecone_api_key=settings.pinecone_api_key,
+    )
+    vector_store.add_texts(
+        texts=[chunk.chunk_text for chunk in chunks],
+        metadatas=[
             {
-                "id": _build_vector_id(document_id=document.id, chunk_index=chunk.chunk_index),
-                "values": embedding,
-                "metadata": {
-                    "document_id": document.id,
-                    "project_id": document.project_id,
-                    "workspace_id": document.workspace_id,
-                    "owner_id": document.owner_id,
-                    "chunk_index": chunk.chunk_index,
-                    "token_count": chunk.token_count,
-                },
+                "document_id": document.id,
+                "project_id": document.project_id,
+                "workspace_id": document.workspace_id,
+                "owner_id": document.owner_id,
+                "chunk_index": chunk.chunk_index,
+                "token_count": chunk.token_count,
             }
-        )
-
-    index = get_pinecone_index()
-    for batch in _batch_items(vectors, settings.pinecone_upsert_batch_size):
-        _upsert_batch(index=index, vectors=batch)
-
-
-@retry(
-    stop=stop_after_attempt(settings.embedding_max_retries),
-    wait=wait_exponential(multiplier=1, min=1, max=15),
-    retry=retry_if_exception_type(Exception),
-    reraise=True,
-)
-def _upsert_batch(*, index: Any, vectors: list[dict[str, Any]]) -> None:
-    index.upsert(vectors=vectors, namespace=settings.pinecone_namespace)
+            for chunk in chunks
+        ],
+        ids=[f"doc-{document.id}-chunk-{chunk.chunk_index}" for chunk in chunks],
+        namespace=settings.pinecone_namespace,
+    )
 
 
 def _build_vector_id(*, document_id: int, chunk_index: int) -> str:
     return f"doc-{document_id}-chunk-{chunk_index}"
-
-
-def _batch_items(items: list[dict[str, Any]], batch_size: int) -> Iterable[list[dict[str, Any]]]:
-    normalized_batch_size = max(1, batch_size)
-    for index in range(0, len(items), normalized_batch_size):
-        yield items[index : index + normalized_batch_size]

@@ -86,7 +86,8 @@ ai-research-platform/
 |   |   |-- rag/
 |   |   |   |-- ingestion/
 |   |   |   |   |-- parser.py
-|   |   |   |   |-- chunking.py
+|   |   |   |   |-- loaders.py
+|   |   |   |   |-- splitters.py
 |   |   |   |   `-- ingestion_pipeline.py
 |   |   |   `-- retrieval/
 |   |   |       |-- retriever.py
@@ -188,7 +189,8 @@ ai-research-platform/
 
 7. `app/ai/rag/`
 - Retrieval and ingestion orchestration.
-- Ingestion parsing/chunking and retrieval context building both yahin.
+- Active ingestion path LangChain loaders/splitters use karti hai.
+- `parser.py` sirf fallback reference ke liye preserved hai.
 
 8. `app/ai/vectorstore/`
 - Vector DB specific clients and operations.

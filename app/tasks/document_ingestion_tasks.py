@@ -1,9 +1,8 @@
 from datetime import UTC, datetime
 from typing import Any
 
-from app.ai.llm.wrappers.embeddings import generate_embeddings
-from app.ai.rag.ingestion.ingestion_pipeline import build_document_chunks
-from app.ai.vectorstore.indexing.upsert import upsert_document_vectors
+from app.ai.rag.ingestion import build_document_chunks
+from app.ai.vectorstore.indexing import upsert_document_vectors
 from app.config import get_settings
 from app.database import SessionLocal
 from app.repositories.document_repository import (
@@ -51,13 +50,7 @@ def ingest_document(self: Any, document_id: int) -> None:
             chunks=[(chunk.chunk_index, chunk.chunk_text, chunk.token_count) for chunk in chunks],
         )
 
-        chunk_texts = [chunk.chunk_text for chunk in chunks]
-        embeddings = generate_embeddings(chunk_texts)
-        upsert_document_vectors(
-            document=document,
-            chunks=chunks,
-            embeddings=embeddings,
-        )
+        upsert_document_vectors(document=document, chunks=chunks)
 
         update_document_ingestion_fields(
             db=db,

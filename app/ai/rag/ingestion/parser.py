@@ -1,3 +1,9 @@
+"""Backup custom parser kept for fallback reference.
+
+Current runtime ingestion uses LangChain document loaders from
+`app.ai.rag.ingestion.loaders` instead of this module.
+"""
+
 import csv
 import json
 from pathlib import Path
