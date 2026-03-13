@@ -58,6 +58,7 @@ ai-research-platform/
 |   |   |-- project_schema.py
 |   |   |-- document_schema.py
 |   |   |-- document_ingestion_schema.py
+|   |   |-- knowledge_schema.py
 |   |   |-- research_task_schema.py
 |   |   |-- research_schema.py
 |   |   |-- agent_schema.py
@@ -75,6 +76,7 @@ ai-research-platform/
 |   |   |-- workspace_service.py
 |   |   |-- project_service.py
 |   |   |-- document_service.py
+|   |   |-- knowledge_service.py
 |   |   |-- research_task_service.py
 |   |   `-- research_service.py
 |   |-- ai/
@@ -82,7 +84,8 @@ ai-research-platform/
 |   |   |   |-- clients/
 |   |   |   |   `-- __init__.py
 |   |   |   `-- wrappers/
-|   |   |       `-- embeddings.py
+|   |   |       |-- embeddings.py
+|   |   |       `-- chat.py
 |   |   |-- rag/
 |   |   |   |-- rag_pipeline.py
 |   |   |   |-- ingestion/

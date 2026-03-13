@@ -30,6 +30,10 @@ class Settings(BaseSettings):
         default="openai",
         alias="EMBEDDING_PROVIDER",
     )
+    llm_provider: Literal["openai", "azure_openai"] = Field(
+        default="openai",
+        alias="LLM_PROVIDER",
+    )
     trusted_hosts: list[str] = Field(default=["localhost", "127.0.0.1"], alias="TRUSTED_HOSTS")
 
     # Database
@@ -102,6 +106,10 @@ class Settings(BaseSettings):
         alias="EMBEDDING_MODEL_NAME",
     )
     embedding_model_version: str = Field(default="v1", alias="EMBEDDING_MODEL_VERSION")
+    chat_model_name: str = Field(default="gpt-4o-mini", alias="CHAT_MODEL_NAME")
+    chat_temperature: float = Field(default=0.1, alias="CHAT_TEMPERATURE")
+    chat_request_timeout_seconds: int = Field(default=60, alias="CHAT_REQUEST_TIMEOUT_SECONDS")
+    chat_max_retries: int = Field(default=3, alias="CHAT_MAX_RETRIES")
     embedding_batch_size: int = Field(default=32, alias="EMBEDDING_BATCH_SIZE")
     embedding_request_timeout_seconds: int = Field(
         default=30,
@@ -119,6 +127,10 @@ class Settings(BaseSettings):
     azure_openai_embedding_deployment: str = Field(
         default="text-embedding-3-large",
         alias="AZURE_OPENAI_EMBEDDING_DEPLOYMENT",
+    )
+    azure_openai_chat_deployment: str = Field(
+        default="gpt-4o-mini",
+        alias="AZURE_OPENAI_CHAT_DEPLOYMENT",
     )
 
     # Vector Store (Pinecone)
@@ -155,7 +167,7 @@ class Settings(BaseSettings):
     def is_production(self) -> bool:
         return self.app_env == "production"
 
-    def safe_summary(self) -> dict[str, str | bool | int]:
+    def safe_summary(self) -> dict[str, str | bool | int | float]:
         # Keep startup logs safe by excluding sensitive values.
         return {
             "app_name": self.app_name,
@@ -165,6 +177,7 @@ class Settings(BaseSettings):
             "app_port": self.app_port,
             "app_log_level": self.app_log_level,
             "embedding_provider": self.embedding_provider,
+            "llm_provider": self.llm_provider,
             "database_echo": self.database_echo,
             "redis_url": self.redis_url,
             "celery_broker_url": self.celery_broker_url,
@@ -179,6 +192,10 @@ class Settings(BaseSettings):
             "chunk_overlap_tokens": self.chunk_overlap_tokens,
             "embedding_model_name": self.embedding_model_name,
             "embedding_model_version": self.embedding_model_version,
+            "chat_model_name": self.chat_model_name,
+            "chat_temperature": self.chat_temperature,
+            "chat_request_timeout_seconds": self.chat_request_timeout_seconds,
+            "chat_max_retries": self.chat_max_retries,
             "embedding_batch_size": self.embedding_batch_size,
             "embedding_request_timeout_seconds": self.embedding_request_timeout_seconds,
             "embedding_max_retries": self.embedding_max_retries,
@@ -186,6 +203,7 @@ class Settings(BaseSettings):
             "azure_openai_endpoint": self.azure_openai_endpoint,
             "azure_openai_api_version": self.azure_openai_api_version,
             "azure_openai_embedding_deployment": self.azure_openai_embedding_deployment,
+            "azure_openai_chat_deployment": self.azure_openai_chat_deployment,
             "pinecone_index_name": self.pinecone_index_name,
             "pinecone_namespace": self.pinecone_namespace,
             "pinecone_environment": self.pinecone_environment,
