@@ -1,21 +1,15 @@
+from langchain_community.document_loaders import (
+    CSVLoader,
+    Docx2txtLoader,
+    PyPDFLoader,
+    TextLoader,
+    UnstructuredExcelLoader,
+)
 from langchain_core.documents import Document as LangChainDocument
 
 
 def load_documents(file_path: str) -> list[LangChainDocument]:
     suffix = file_path.rsplit(".", 1)[-1].lower() if "." in file_path else ""
-
-    try:
-        from langchain_community.document_loaders import (
-            CSVLoader,
-            Docx2txtLoader,
-            PyPDFLoader,
-            TextLoader,
-            UnstructuredExcelLoader,
-        )
-    except ImportError as exc:
-        raise RuntimeError(
-            "LangChain document loader dependencies are missing. Install langchain-community and related extras."
-        ) from exc
 
     if suffix == "pdf":
         return PyPDFLoader(file_path).load()

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from langchain_core.documents import Document as LangChainDocument
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from app.config import get_settings
 
@@ -15,13 +16,6 @@ class TextChunk:
 
 
 def split_documents(documents: list[LangChainDocument]) -> list[TextChunk]:
-    try:
-        from langchain_text_splitters import RecursiveCharacterTextSplitter
-    except ImportError as exc:
-        raise RuntimeError(
-            "LangChain text splitter dependency is missing. Install langchain-text-splitters."
-        ) from exc
-
     splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
         model_name=settings.embedding_model_name,
         chunk_size=settings.chunk_size_tokens,

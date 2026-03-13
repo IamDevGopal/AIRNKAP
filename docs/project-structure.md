@@ -91,7 +91,8 @@ ai-research-platform/
 |   |   |   |   `-- ingestion_pipeline.py
 |   |   |   `-- retrieval/
 |   |   |       |-- retriever.py
-|   |   |       `-- context_builder.py
+|   |   |       |-- context_builder.py
+|   |   |       `-- pipeline.py
 |   |   |-- vectorstore/
 |   |   |   |-- clients/
 |   |   |   |   `-- pinecone_client.py

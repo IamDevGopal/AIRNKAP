@@ -1,3 +1,5 @@
+from langchain_pinecone import PineconeVectorStore
+
 from app.ai.llm.wrappers.embeddings import get_embeddings_client
 from app.ai.rag.ingestion.splitters import TextChunk
 from app.config import get_settings
@@ -13,13 +15,6 @@ def upsert_document_vectors(
 ) -> None:
     if not chunks:
         return
-
-    try:
-        from langchain_pinecone import PineconeVectorStore
-    except ImportError as exc:
-        raise RuntimeError(
-            "LangChain Pinecone dependencies are missing. Install langchain-pinecone first."
-        ) from exc
 
     embeddings = get_embeddings_client()
     vector_store = PineconeVectorStore(

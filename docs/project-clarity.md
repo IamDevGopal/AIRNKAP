@@ -1,151 +1,407 @@
-# Project Clarity: Purpose, Flow, and Next Build Steps
+# Project Clarity: Purpose, Systems, and Consumer Flow
 
-## 1) Project Ka Core Purpose
+## 1. Core Product Purpose
 
-Ye project sirf APIs banane ke liye nahi hai. Iska real goal hai:
+Ye project sirf document upload ya chatbot nahi hai.
 
-- raw uploaded documents ko searchable knowledge base me convert karna
-- us knowledge ke basis par grounded AI answers/reports dena
-- user ko workspace/project based research workflow provide karna
+Iska real product goal hai:
+
+- raw uploaded documents ko structured searchable knowledge base me convert karna
+- us prepared knowledge ko multiple product systems me reuse karna
+- grounded AI outputs dena:
+  - answers
+  - research outputs
+  - reports
+  - agent workflows
+  - automation outputs
 
 Short formula:
 
-`Raw Docs -> Structured Knowledge -> Grounded AI Outputs`
+`Raw Documents -> Prepared Knowledge Base -> Retrieval/Context System -> Product Outputs`
 
 ---
 
-## 2) End-to-End Product Flow (User Perspective)
+## 2. Current Product Status
 
-1. User sign up/login karta hai.
-2. User workspace create karta hai.
-3. Workspace ke andar project create karta hai.
-4. Project me documents upload karta hai.
-5. System async ingestion run karta hai:
-   - parse
-   - chunk
-   - embeddings
-   - Pinecone upsert
-6. User query/research task run karta hai.
-7. System relevant context retrieve karke answer/report generate karta hai.
+Abhi tak jo major system complete hua hai wo hai:
 
----
+### A. Knowledge Preparation System
 
-## 3) Abhi Tak Kya Complete Hua Hai
+Ye system documents ko AI-ready banata hai.
 
-Implemented and working:
+Current implemented flow:
 
-1. Auth + user basics
-2. Workspace CRUD
-3. Project CRUD
-4. Document upload
-5. Async RAG ingestion pipeline:
-   - file parsing
-   - token chunking
-   - embedding generation
-   - vector indexing (Pinecone)
-   - ingestion status tracking (`queued -> processing -> ready/failed`)
-6. Polling APIs:
-   - document status
-   - document chunks
+1. user document upload karta hai
+2. file disk par save hoti hai
+3. metadata `documents` table me save hoti hai
+4. Celery job queue me add hoti hai
+5. worker job pick karta hai
+6. LangChain loader document load karta hai
+7. LangChain splitter chunks banata hai
+8. chunk rows `document_chunks` table me save hoti hain
+9. embedding client chunks ko vectors me convert karta hai
+10. vectors Pinecone me upsert hoti hain
+11. document `ready` mark hota hai
 
 Meaning:
-- "Knowledge banana" wala major foundation complete hai.
+
+- knowledge base prepare ho chuka hai
+- but knowledge ka user-facing consumption system abhi next phase hai
 
 ---
 
-## 4) Ab Next Kya Banana Hai Aur Kyu
+## 3. Two Main Systems of the Product
 
-Current ingestion ke baad next value-delivering phase:
+Is project ko samajhne ka best tareeka ye hai ki ise do major systems me dekho:
 
-1. Retrieval API
-- Kya: query pe top-k relevant chunks lana
-- Kyu: indexed vectors ko user query me use karna
+### System 1: Knowledge Preparation System
 
-2. RAG Answer API (chat/query)
-- Kya: retrieved context + LLM se grounded answer
-- Kyu: user-facing intelligence yahi hai
+Purpose:
+- uploaded knowledge ko ready karna
 
-3. Citation/Source Mapping
-- Kya: answer ke saath source chunks/pages dena
-- Kyu: trust, auditability, professional UX
+Main responsibilities:
+- upload
+- parsing/loading
+- chunking
+- embeddings
+- vector indexing
+- ingestion status tracking
 
-4. Research Task Execution
-- Kya: structured tasks (summary, comparison, risk analysis, etc.)
-- Kyu: chatbot se product workflow tak jump
+Main runtime flow:
 
-5. Report Generation
-- Kya: task outputs ko saved/exportable reports me convert karna
-- Kyu: real business/research deliverable
+`upload -> save -> queue -> worker -> load -> split -> embed -> index -> ready`
 
----
+Main modules:
+- `app/api/v1/document_routes.py`
+- `app/services/document_service.py`
+- `app/tasks/document_ingestion_tasks.py`
+- `app/ai/rag/ingestion/`
+- `app/ai/llm/wrappers/embeddings.py`
+- `app/ai/vectorstore/indexing/upsert.py`
+- `app/repositories/document_repository.py`
 
-## 5) Structure Ka Clear Mental Model
+### System 2: Knowledge Usage System
 
-### Runtime responsibilities
+Purpose:
+- prepared knowledge base ko actual user features me use karna
 
-1. `app/api/`
-- HTTP routes/endpoints
+Main responsibilities:
+- retrieval
+- filtering by scope
+- context building
+- citation/source mapping
+- context ko downstream modules ko dena
 
-2. `app/services/`
-- business orchestration layer
+Main runtime flow:
 
-3. `app/ai/rag/`
-- retrieval/context pipeline logic
+`question/task/workflow input -> retrieve -> build context -> consumer module -> result`
 
-4. `app/ai/llm/`
-- model/provider communication (Azure OpenAI, prompts, wrappers)
-
-5. `app/ai/vectorstore/`
-- vector DB operations (upsert/query)
-
-6. `app/ai/agents/` + `app/ai/mcp/`
-- AI orchestration and tool integration layers
-
-7. `app/tasks/`
-- background async jobs (Celery workers)
-
-8. `app/repositories/` + `app/models/`
-- persistence/data access
-
-### Two primary system loops
-
-1. Ingestion loop
-`upload -> task queue -> parse/chunk/embed/index`
-
-2. Query loop
-`user query -> retrieve -> context build -> LLM answer -> response`
+Yahi next major system hai jo abhi build hona baaki hai.
 
 ---
 
-## 6) Why This Clarity Matters
+## 4. Retrieval System Ka Exact Role
 
-Jab purpose clear hota hai to folder layout aur implementation decisions naturally clear hote hain:
+Retrieval system ko simplest tareeke se samjho:
 
-- kaunsa code ingestion side ka hai
-- kaunsa code query side ka hai
-- kaunsa module future placeholder hai
-- kaunsa module immediate build priority hai
+- prepared knowledge base ka consumer-facing access layer
+- ye khud final product output nahi hai
+- ye baaki modules ko relevant context deta hai
 
-Isi se development fast, consistent, aur low-confusion hota hai.
+Isliye retrieval system ko product ka **shared intelligence access layer** samajhna chahiye.
+
+### Retrieval system kya karega
+
+1. input lega
+- user query
+- chat message
+- research task instruction
+- report request
+- agent step input
+- workflow trigger input
+
+2. scope decide karega
+- single document
+- project-wide
+- later workspace-wide
+
+3. vector search karega
+- Pinecone me
+- metadata filters ke saath
+
+4. relevant chunks return karega
+
+5. context build karega
+- dedup
+- order
+- token-budget fit
+- citations/source references
+
+6. final context consumer module ko dega
+
+### Retrieval system khud final answer nahi hai
+
+Ye bahut important distinction hai.
+
+Retrieval system ka output ho sakta hai:
+- relevant chunks
+- normalized context package
+- citation-ready source bundle
+
+Final answer ya report retrieval system nahi, downstream consumer banayega.
 
 ---
 
-## 7) User-Facing Next Modules and APIs
+## 5. Consumer Modules Ka Concept
 
-### A) Knowledge Query Module
+Prepared knowledge base ko directly user nahi use karega.
+User jo features dekhega wo alag-alag consumer modules honge.
+
+Ye saare modules same retrieval system ko consume karenge.
+
+Simple formula:
+
+`Prepared Knowledge Base -> Retrieval System -> Consumer Module -> User Output`
+
+---
+
+## 6. Query and Chat: Same Ya Alag?
+
+Ye related hain, but exactly same nahi hain.
+
+### A. Query Module
+
+Purpose:
+- one-shot retrieval based answer ya search-style response
+
+Typical use:
+- "Is document me revenue drop ka reason kya hai?"
+- "Project me risk related top relevant content dikhao"
+
+Nature:
+- stateless ya near-stateless
+- single request -> single response
+
+Output:
+- direct answer
+- sources
+- maybe raw retrieval results
+
+### B. Chat Module
+
+Purpose:
+- conversational interface over same knowledge base
+
+Typical use:
+- "Is project ka summary batao"
+- "Achha ab sirf legal risk waale points batao"
+- "Isko aur short me samjhao"
+
+Nature:
+- session-aware
+- follow-up aware
+- same retrieval system ko repeatedly call karega
+
+Output:
+- conversational answer
+- citations
+- session history linked response
+
+### Clear conclusion
+
+- Query aur Chat same nahi hain
+- but dono same retrieval/context system ko use karenge
+
+Short distinction:
+
+- Query = one-shot consumption interface
+- Chat = session-based consumption interface
+
+---
+
+## 7. Main Future Consumer Systems
+
+Ye product ke major upcoming systems honge jo retrieval layer ko use karenge.
+
+### A. Knowledge Query System
 
 Use case:
-- document-specific ya project-wide knowledge queries
+- user selected document ya project par question kare
+
+Consumer role:
+- retrieval result ko direct user answer me convert karna
+
+Scope examples:
+- document scoped
+- project scoped
+
+### B. Chat System
+
+Use case:
+- conversational research over uploaded knowledge
+
+Consumer role:
+- retrieval + prior conversation context combine karna
+
+Scope examples:
+- project chat
+- document chat
+
+### C. Research Task System
+
+Use case:
+- structured task execution
+
+Examples:
+- summarize this document
+- compare two documents
+- extract risks
+- generate timeline
+- identify action items
+
+Consumer role:
+- retrieval context ko task-specific prompt/process me use karna
+
+Important:
+- research task direct chat nahi hai
+- ye instruction-driven structured execution hai
+
+### D. Report Generation System
+
+Use case:
+- user ko final business/research deliverable dena
+
+Examples:
+- executive summary
+- due diligence report
+- risk report
+- comparison report
+
+Consumer role:
+- retrieval context + research outputs ko structured report me assemble karna
+
+### E. Agent System
+
+Use case:
+- multi-step AI workflows
+
+Examples:
+- research agent
+- summarizer agent
+- report agent
+
+Consumer role:
+- har agent step retrieval/context system use kar sakta hai
+- agents same knowledge base ko different tasks ke liye consume karenge
+
+### F. MCP Tool System
+
+Use case:
+- tools ke through structured knowledge access
+
+Examples:
+- semantic document search tool
+- source lookup tool
+- scoped retrieval tool
+
+Consumer role:
+- retrieval system MCP tools ke andar expose ho sakta hai
+
+### G. Automation / Workflow System
+
+Use case:
+- n8n ya internal workflows
+
+Examples:
+- new document upload ke baad auto-summary
+- scheduled weekly report
+- triggered research run
+
+Consumer role:
+- workflow same retrieval/context layer ko programmatically call karega
+
+---
+
+## 8. Retrieval System Ko Kaun Kaun Use Karega
+
+Crystal clear mapping:
+
+1. `knowledge query` module use karega
+2. `chat` module use karega
+3. `research task` module use karega
+4. `report generation` module use karega
+5. `agents` use karenge
+6. `MCP tools` use karenge
+7. `automation workflows / n8n` use karega
+
+Yani:
+
+- retrieval system ek shared dependency hoga
+- not a user-visible product by itself
+- but almost saare intelligent modules usko consume karenge
+
+---
+
+## 9. Scope Levels: Document vs Project vs Workspace
+
+Future clarity ke liye ye important hai:
+
+### A. Document Scope
+
+Use when:
+- user ek specific document par kaam karna chahta hai
+
+Example:
+- "Is PDF ka summary batao"
+
+Filter basis:
+- `document_id`
+
+### B. Project Scope
+
+Use when:
+- user poore project knowledge base par kaam karna chahta hai
+
+Example:
+- "Is project ke sabhi uploaded docs me key risks kya hain?"
+
+Filter basis:
+- `project_id`
+
+### C. Workspace Scope
+
+Use later when:
+- multiple projects ke across knowledge consume karna ho
+
+Example:
+- "Mere workspace ke sabhi projects me legal risk trend kya hai?"
+
+Filter basis:
+- `workspace_id`
+
+Current practical priority:
+- document scope
+- project scope
+
+---
+
+## 10. API Modules and Retrieval Alignment
+
+### A. Knowledge Query APIs
 
 Proposed APIs:
 - `POST /api/v1/knowledge/query`
 - `POST /api/v1/knowledge/query/document`
 - `POST /api/v1/knowledge/query/project`
 
-### B) Chat Module
+How retrieval is used:
+- query input aata hai
+- scope detect ya explicitly pass hota hai
+- retrieval system top-k chunks nikalta hai
+- context builder final context pack karta hai
+- answer layer response generate karti hai
 
-Use case:
-- conversational research over project knowledge base
+### B. Chat APIs
 
 Proposed APIs:
 - `POST /api/v1/research/chat`
@@ -153,10 +409,12 @@ Proposed APIs:
 - `GET /api/v1/research/chat/sessions/{session_id}`
 - `DELETE /api/v1/research/chat/sessions/{session_id}`
 
-### C) Research Task Module
+How retrieval is used:
+- current user message + session scope input
+- retrieval same knowledge base se context lata hai
+- chat layer conversation state ke saath answer banata hai
 
-Use case:
-- structured tasks (summary, comparison, risk extraction, etc.)
+### C. Research Task APIs
 
 Proposed APIs:
 - `POST /api/v1/research-tasks`
@@ -165,10 +423,11 @@ Proposed APIs:
 - `POST /api/v1/research-tasks/{task_id}/run`
 - `POST /api/v1/research-tasks/{task_id}/cancel`
 
-### D) Report Module
+How retrieval is used:
+- task run hone par task type ke hisab se retrieval chalega
+- same retrieved context ko task-specific transformation me use kiya jayega
 
-Use case:
-- generated outputs ko report artifacts me save/export karna
+### D. Report APIs
 
 Proposed APIs:
 - `POST /api/v1/reports/generate`
@@ -176,24 +435,107 @@ Proposed APIs:
 - `GET /api/v1/reports/{report_id}`
 - `DELETE /api/v1/reports/{report_id}`
 
-### E) Knowledge Operations Module
+How retrieval is used:
+- report generation direct retrieval use kar sakta hai
+- ya research tasks ke outputs ke through indirectly same knowledge consume karega
 
-Use case:
-- reindex/reprocess lifecycle operations
+### E. Knowledge Operations APIs
 
 Proposed APIs:
 - `POST /api/v1/documents/{id}/reindex`
 - `POST /api/v1/projects/{id}/reindex`
-- `GET /api/v1/documents/{id}/status` (already implemented)
-- `GET /api/v1/documents/{id}/chunks` (already implemented)
+- `GET /api/v1/documents/{id}/status`
+- `GET /api/v1/documents/{id}/chunks`
 
-### F) Automation Module (Later Phase)
+How retrieval relates:
+- ye retrieval consumers nahi hain
+- ye knowledge preparation lifecycle ko manage karte hain
 
-Use case:
-- workflow scheduling/event-triggered execution
+### F. Automation APIs
 
 Proposed APIs:
 - `POST /api/v1/automation/workflows`
 - `GET /api/v1/automation/workflows`
 - `POST /api/v1/automation/workflows/{id}/run`
 - `POST /api/v1/automation/workflows/{id}/pause`
+
+How retrieval is used:
+- workflow execution ke andar retrieval/context same reusable system se aayega
+
+---
+
+## 11. Query Loop vs Research Loop vs Report Loop
+
+Ye teen loops related hain, but identical nahi hain.
+
+### A. Query Loop
+
+`user asks -> retrieve -> context build -> answer`
+
+Use:
+- direct knowledge access
+
+### B. Research Loop
+
+`user task instruction -> retrieve -> context build -> structured reasoning -> saved result`
+
+Use:
+- structured task outputs
+
+### C. Report Loop
+
+`user report request -> retrieve or reuse research outputs -> compose report -> save/export`
+
+Use:
+- final artifact generation
+
+Conclusion:
+- retrieval sab jagah common hoga
+- but final consumer behavior alag hoga
+
+---
+
+## 12. Structure Mental Model (Final)
+
+### A. Knowledge Preparation Side
+
+`document_routes -> document_service -> task queue -> worker -> rag/ingestion -> llm/embeddings -> vectorstore/upsert`
+
+### B. Knowledge Usage Side
+
+`knowledge/chat/research/report/agent/mcp/automation -> rag/retrieval -> context builder -> llm/consumer logic -> output`
+
+### C. Rule
+
+- ingestion prepares knowledge
+- retrieval accesses knowledge
+- consumer modules convert retrieved knowledge into product outputs
+
+---
+
+## 13. Immediate Next Build Priority
+
+Current priority should be:
+
+1. retrieval system
+2. context builder
+3. knowledge query module
+4. chat module
+5. research task module
+6. report generation module
+
+Reason:
+- knowledge base already ready hai
+- ab product value tab aayegi jab prepared knowledge ka actual usage layer banega
+
+---
+
+## 14. One-Line Final Clarity
+
+Abhi tak:
+
+- `knowledge prepare karne wala system` ban chuka hai
+
+Ab next:
+
+- `same prepared knowledge ko query, chat, research, report, agents, MCP, aur automation me reuse karne wala shared retrieval/context system` banana hai
