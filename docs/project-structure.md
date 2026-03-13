@@ -84,11 +84,12 @@ ai-research-platform/
 |   |   |   `-- wrappers/
 |   |   |       `-- embeddings.py
 |   |   |-- rag/
+|   |   |   |-- rag_pipeline.py
 |   |   |   |-- ingestion/
 |   |   |   |   |-- parser.py
 |   |   |   |   |-- loaders.py
 |   |   |   |   |-- splitters.py
-|   |   |   |   `-- ingestion_pipeline.py
+|   |   |   |   `-- pipeline.py
 |   |   |   `-- retrieval/
 |   |   |       |-- retriever.py
 |   |   |       |-- context_builder.py

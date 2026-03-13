@@ -2,9 +2,6 @@ import hashlib
 
 from app.ai.rag.ingestion.loaders import load_documents
 from app.ai.rag.ingestion.splitters import TextChunk, split_documents
-from app.config import get_settings
-
-settings = get_settings()
 
 
 def build_document_chunks(file_path: str) -> tuple[str, list[TextChunk], str]:

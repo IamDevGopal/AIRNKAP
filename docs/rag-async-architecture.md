@@ -66,7 +66,8 @@
 - `app/ai/rag/ingestion/parser.py`
 - `app/ai/rag/ingestion/loaders.py`
 - `app/ai/rag/ingestion/splitters.py`
-- `app/ai/rag/ingestion/ingestion_pipeline.py`
+- `app/ai/rag/ingestion/pipeline.py`
+- `app/ai/rag/rag_pipeline.py`
 - `app/ai/llm/wrappers/embeddings.py`
 - `app/ai/vectorstore/clients/pinecone_client.py`
 - `app/ai/vectorstore/indexing/upsert.py`
@@ -170,7 +171,7 @@
 
 ### 6. LangChain-based ingestion pipeline starts
 - Worker canonical ingestion entrypoint call karta hai:
-  - `app/ai/rag/ingestion/ingestion_pipeline.py`
+  - `app/ai/rag/ingestion/pipeline.py`
   - function: `build_document_chunks(file_path)`
 - Ye function 3 outputs return karta hai:
   - `parsed_text`
@@ -210,7 +211,7 @@
   - each object usually has `page_content` and `metadata`
 
 ### 9. Parsed text is normalized
-- `ingestion_pipeline.py` loaded documents se `page_content` join karta hai.
+- `pipeline.py` loaded documents se `page_content` join karta hai.
 - Final `parsed_text` pure document ka normalized text snapshot hota hai.
 - Same `parsed_text` ka SHA-256 hash banaya jata hai:
   - `content_hash`
@@ -372,7 +373,7 @@
   - LangChain document loading
 - `app/ai/rag/ingestion/splitters.py`
   - LangChain chunk building
-- `app/ai/rag/ingestion/ingestion_pipeline.py`
+- `app/ai/rag/ingestion/pipeline.py`
   - parsed text + chunks + hash assembly
 - `app/ai/llm/wrappers/embeddings.py`
   - provider-switchable LangChain embedding client
