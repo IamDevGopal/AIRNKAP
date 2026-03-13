@@ -1,3 +1,3 @@
-from app.ai.llm.wrappers.embeddings import generate_embeddings
+from app.ai.llm.wrappers.embeddings import get_embeddings_client
 
-__all__ = ["generate_embeddings"]
+__all__ = ["get_embeddings_client"]

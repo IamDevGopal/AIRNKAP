@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from langchain_core.documents import Document as LangChainDocument
+
 from app.config import get_settings
 
 settings = get_settings()
@@ -12,7 +14,7 @@ class TextChunk:
     token_count: int
 
 
-def split_documents(documents: list[object]) -> list[TextChunk]:
+def split_documents(documents: list[LangChainDocument]) -> list[TextChunk]:
     try:
         from langchain_text_splitters import RecursiveCharacterTextSplitter
     except ImportError as exc:

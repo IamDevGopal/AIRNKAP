@@ -44,7 +44,3 @@ def upsert_document_vectors(
         ids=[f"doc-{document.id}-chunk-{chunk.chunk_index}" for chunk in chunks],
         namespace=settings.pinecone_namespace,
     )
-
-
-def _build_vector_id(*, document_id: int, chunk_index: int) -> str:
-    return f"doc-{document_id}-chunk-{chunk_index}"
