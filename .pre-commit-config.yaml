@@ -21,4 +21,4 @@ repos:
         entry: venv/Scripts/python.exe -m mypy
         language: system
         pass_filenames: false
-        args: [--config-file=pyproject.toml]
+        args: [--config-file=pyproject.toml, --no-incremental]
