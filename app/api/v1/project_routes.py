@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.auth.dependencies import get_current_user
 from app.database import get_db
 from app.models.user_model import User
+from app.schemas.document_ingestion_schema import ProjectReindexResponse
 from app.schemas.project_schema import (
     ProjectCreateRequest,
     ProjectDeleteResponse,
@@ -15,6 +16,7 @@ from app.services.project_service import (
     delete_user_project,
     get_user_project,
     list_user_projects,
+    reindex_user_project,
     update_user_project,
 )
 
@@ -70,3 +72,18 @@ def delete_project(
 ) -> ProjectDeleteResponse:
     delete_user_project(db, current_user, project_id)
     return ProjectDeleteResponse(message="Project deactivated successfully")
+
+
+@router.post("/{project_id}/reindex", response_model=ProjectReindexResponse)
+def reindex_project(
+    project_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ProjectReindexResponse:
+    queued_document_ids = reindex_user_project(db, current_user, project_id)
+    return ProjectReindexResponse(
+        project_id=project_id,
+        queued_document_ids=queued_document_ids,
+        queued_count=len(queued_document_ids),
+        message="Project reindex queued successfully",
+    )

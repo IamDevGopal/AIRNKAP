@@ -28,3 +28,16 @@ class DocumentChunkResponse(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class DocumentReindexResponse(BaseModel):
+    document_id: int
+    ingestion_status: DocumentIngestionStatus
+    message: str
+
+
+class ProjectReindexResponse(BaseModel):
+    project_id: int
+    queued_document_ids: list[int]
+    queued_count: int
+    message: str

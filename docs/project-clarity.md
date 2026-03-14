@@ -48,6 +48,7 @@ Meaning:
 - knowledge base prepare ho chuka hai
 - knowledge query aur session-aware chat ka base implementation bhi aa chuka hai
 - research task lifecycle ka base implementation bhi aa chuka hai
+- report generation ka research-task-driven base implementation bhi aa chuka hai
 - remaining higher-level consumers abhi next phase me hain
 
 ---
@@ -453,6 +454,11 @@ Proposed APIs:
 How retrieval is used:
 - report generation direct retrieval use kar sakta hai
 - ya research tasks ke outputs ke through indirectly same knowledge consume karega
+
+Current implementation:
+- research-task-driven report generation
+- report create/list/get/delete
+- project-scoped report artifacts
 
 ### E. Knowledge Operations APIs
 

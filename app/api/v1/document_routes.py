@@ -10,6 +10,7 @@ from app.schemas.document_ingestion_schema import (
     DocumentChunkResponse,
     DocumentIngestionStatus,
     DocumentIngestionStatusResponse,
+    DocumentReindexResponse,
 )
 from app.schemas.document_schema import (
     DocumentDeleteResponse,
@@ -23,6 +24,7 @@ from app.services.document_service import (
     get_user_document_ingestion_status,
     list_user_document_chunks,
     list_user_documents,
+    reindex_user_document,
     update_user_document,
 )
 
@@ -126,3 +128,17 @@ def list_document_chunks(
         offset=offset,
     )
     return [DocumentChunkResponse.model_validate(chunk) for chunk in chunks]
+
+
+@router.post("/{document_id}/reindex", response_model=DocumentReindexResponse)
+def reindex_document(
+    document_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> DocumentReindexResponse:
+    document = reindex_user_document(db, current_user, document_id)
+    return DocumentReindexResponse(
+        document_id=document.id,
+        ingestion_status=cast(DocumentIngestionStatus, document.ingestion_status),
+        message="Document reindex queued successfully",
+    )

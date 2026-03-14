@@ -152,7 +152,10 @@
 
 ### 4. Worker queue se job pick karta hai
 - Separate worker process command:
-  - `celery -A app.tasks.celery_app worker -l info`
+  - Linux / WSL / production-like:
+    - `celery -A app.tasks.celery_app worker -l info`
+  - Windows local fallback:
+    - `celery -A app.tasks.celery_app worker -l info -P solo --concurrency 1`
 - Worker Redis broker se `document_ingestion` queue monitor karta hai.
 - Job aate hi `document.ingest` task run hota hai.
 - Runtime code:

@@ -3,6 +3,10 @@ from sqlalchemy.orm import Session
 
 from app.models.project_model import Project
 from app.models.user_model import User
+from app.repositories.document_repository import (
+    list_documents_by_owner,
+    update_document_ingestion_fields,
+)
 from app.repositories.project_repository import (
     create_project,
     get_project_by_owner_and_id,
@@ -12,6 +16,7 @@ from app.repositories.project_repository import (
 )
 from app.repositories.workspace_repository import get_workspace_by_owner_and_id
 from app.schemas.project_schema import ProjectCreateRequest, ProjectUpdateRequest
+from app.tasks.document_dispatch import enqueue_document_ingestion_job
 
 
 def create_user_project(db: Session, current_user: User, payload: ProjectCreateRequest) -> Project:
@@ -94,3 +99,25 @@ def delete_user_project(db: Session, current_user: User, project_id: int) -> Non
     project = get_user_project(db, current_user, project_id)
     project.is_active = False
     update_project(db, project)
+
+
+def reindex_user_project(db: Session, current_user: User, project_id: int) -> list[int]:
+    project = get_user_project(db, current_user, project_id)
+
+    queued_documents = []
+    for document in list_documents_by_owner(db, current_user.id, project.id):
+        if document.status != "active" or not document.file_path:
+            continue
+        queued_documents.append(
+            update_document_ingestion_fields(
+                db,
+                document,
+                ingestion_status="queued",
+                ingestion_error=None,
+                ingestion_started_at=None,
+                ingestion_completed_at=None,
+            )
+        )
+        enqueue_document_ingestion_job(document.id)
+
+    return [document.id for document in queued_documents]

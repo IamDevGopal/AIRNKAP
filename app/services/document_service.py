@@ -1,4 +1,3 @@
-import logging
 from pathlib import Path
 import shutil
 from uuid import uuid4
@@ -16,11 +15,11 @@ from app.repositories.document_repository import (
     list_document_chunks_by_document_id,
     list_documents_by_owner,
     update_document,
+    update_document_ingestion_fields,
 )
 from app.repositories.project_repository import get_project_by_owner_and_id
 from app.schemas.document_schema import DocumentUpdateRequest
-
-logger = logging.getLogger(__name__)
+from app.tasks.document_dispatch import enqueue_document_ingestion_job
 
 
 def _safe_file_name(filename: str) -> str:
@@ -104,17 +103,8 @@ def create_user_document_from_upload(
         content_text=None,
     )
 
-    _enqueue_document_ingestion_job(document.id)
+    enqueue_document_ingestion_job(document.id)
     return document
-
-
-def _enqueue_document_ingestion_job(document_id: int) -> None:
-    try:
-        from app.tasks.document_ingestion_tasks import ingest_document
-
-        ingest_document.delay(document_id)
-    except Exception as exc:
-        logger.exception("Failed to enqueue ingestion job for document_id=%s: %s", document_id, exc)
 
 
 def list_user_documents(
@@ -201,3 +191,28 @@ def list_user_document_chunks(
         limit=limit,
         offset=offset,
     )
+
+
+def reindex_user_document(db: Session, current_user: User, document_id: int) -> Document:
+    document = get_user_document(db, current_user, document_id)
+    if document.status != "active":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Only active documents can be reindexed",
+        )
+    if not document.file_path:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Document does not have a file path to reindex",
+        )
+
+    queued_document = update_document_ingestion_fields(
+        db,
+        document,
+        ingestion_status="queued",
+        ingestion_error=None,
+        ingestion_started_at=None,
+        ingestion_completed_at=None,
+    )
+    enqueue_document_ingestion_job(queued_document.id)
+    return queued_document
