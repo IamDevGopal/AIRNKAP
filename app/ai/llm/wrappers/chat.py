@@ -1,5 +1,7 @@
+from collections.abc import Iterator
+
 from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, BaseMessageChunk, HumanMessage, SystemMessage
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
 from pydantic import SecretStr
 
@@ -38,6 +40,44 @@ def generate_grounded_answer(
     chat_history: list[tuple[str, str]] | None = None,
 ) -> str:
     chat_model = get_chat_client()
+    messages = _build_grounded_messages(
+        query_text=query_text,
+        context_text=context_text,
+        chat_history=chat_history,
+    )
+    response = chat_model.invoke(messages)
+
+    if isinstance(response.content, str):
+        return response.content.strip()
+
+    return str(response.content).strip()
+
+
+def stream_grounded_answer(
+    *,
+    query_text: str,
+    context_text: str,
+    chat_history: list[tuple[str, str]] | None = None,
+) -> Iterator[str]:
+    chat_model = get_chat_client()
+    messages = _build_grounded_messages(
+        query_text=query_text,
+        context_text=context_text,
+        chat_history=chat_history,
+    )
+
+    for chunk in chat_model.stream(messages):
+        text = _extract_chunk_text(chunk)
+        if text:
+            yield text
+
+
+def _build_grounded_messages(
+    *,
+    query_text: str,
+    context_text: str,
+    chat_history: list[tuple[str, str]] | None,
+) -> list[SystemMessage | HumanMessage | AIMessage]:
     messages: list[SystemMessage | HumanMessage | AIMessage] = [
         SystemMessage(
             content=(
@@ -63,10 +103,10 @@ def generate_grounded_answer(
             )
         )
     )
+    return messages
 
-    response = chat_model.invoke(messages)
 
-    if isinstance(response.content, str):
-        return response.content.strip()
-
-    return str(response.content).strip()
+def _extract_chunk_text(chunk: BaseMessageChunk) -> str:
+    if isinstance(chunk.content, str):
+        return chunk.content
+    return "".join(str(item) for item in chunk.content)

@@ -1,10 +1,11 @@
+from collections.abc import Iterator
 import json
 from typing import cast
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.ai.llm.wrappers.chat import generate_grounded_answer
+from app.ai.llm.wrappers.chat import generate_grounded_answer, stream_grounded_answer
 from app.ai.rag.retrieval import (
     RetrievalRequest,
     RetrievalScope,
@@ -114,6 +115,125 @@ def send_chat_message(
         user_message=_serialize_message(user_message),
         assistant_message=_serialize_message(assistant_message),
     )
+
+
+def stream_chat_message(
+    *,
+    db: Session,
+    current_user: User,
+    payload: ChatMessageRequest,
+) -> Iterator[str]:
+    session, created_new_session = _resolve_chat_session(
+        db=db,
+        current_user=current_user,
+        payload=payload,
+    )
+    history = _build_chat_history(
+        list_recent_chat_messages(
+            db,
+            session.id,
+            settings.chat_history_messages_limit,
+        )
+    )
+    user_message = create_chat_message(
+        db,
+        session=session,
+        role="user",
+        content=payload.message,
+    )
+    retrieval_response = run_retrieval_pipeline(
+        RetrievalRequest(
+            query_text=payload.message,
+            scope=RetrievalScope(
+                scope_type=cast(KnowledgeScopeType, session.scope_type),
+                scope_id=session.scope_id,
+            ),
+            top_k=payload.top_k,
+            max_context_chunks=payload.max_context_chunks,
+        )
+    )
+    context_text = retrieval_response.context.context_text.strip()
+    used_context = bool(context_text)
+    serialized_sources = [
+        _serialize_source(source) for source in retrieval_response.context.sources
+    ]
+
+    def event_stream() -> Iterator[str]:
+        yield _format_sse_event(
+            "chat.start",
+            {
+                "created_new_session": created_new_session,
+                "session": _serialize_session(session).model_dump(mode="json"),
+                "user_message": _serialize_message(user_message).model_dump(mode="json"),
+                "used_context": used_context,
+                "chunk_count": retrieval_response.context.chunk_count,
+                "sources": serialized_sources,
+            },
+        )
+
+        if not used_context:
+            fallback_text = "No relevant context was found in the selected knowledge scope."
+            assistant_message = create_chat_message(
+                db,
+                session=session,
+                role="assistant",
+                content=fallback_text,
+                context_text=context_text,
+                sources_json=json.dumps(serialized_sources),
+                chunk_count=retrieval_response.context.chunk_count,
+                used_context=False,
+            )
+            yield _format_sse_event("chat.token", {"delta": fallback_text})
+            yield _format_sse_event(
+                "chat.complete",
+                {
+                    "session": _serialize_session(session).model_dump(mode="json"),
+                    "assistant_message": _serialize_message(assistant_message).model_dump(
+                        mode="json"
+                    ),
+                },
+            )
+            return
+
+        chunks: list[str] = []
+        try:
+            for delta in stream_grounded_answer(
+                query_text=payload.message,
+                context_text=context_text,
+                chat_history=history,
+            ):
+                chunks.append(delta)
+                yield _format_sse_event("chat.token", {"delta": delta})
+        except Exception as exc:
+            yield _format_sse_event("chat.error", {"detail": str(exc)})
+            raise
+
+        assistant_content = "".join(chunks).strip()
+        assistant_message = create_chat_message(
+            db,
+            session=session,
+            role="assistant",
+            content=assistant_content,
+            context_text=context_text,
+            sources_json=json.dumps(serialized_sources),
+            chunk_count=retrieval_response.context.chunk_count,
+            used_context=True,
+        )
+        refreshed_session = get_chat_session_by_owner_and_id(db, current_user.id, session.id)
+        if refreshed_session is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Chat session could not be reloaded",
+            )
+        yield _format_sse_event(
+            "chat.complete",
+            {
+                "session": _serialize_session(refreshed_session).model_dump(mode="json"),
+                "assistant_message": _serialize_message(assistant_message).model_dump(mode="json"),
+            },
+        )
+
+    return event_stream()
 
 
 def list_user_chat_sessions(
@@ -286,3 +406,7 @@ def _serialize_source(source: ContextSource) -> dict[str, int | float | None]:
         "chunk_index": source.chunk_index,
         "score": source.score,
     }
+
+
+def _format_sse_event(event: str, payload: dict[str, object]) -> str:
+    return f"event: {event}\ndata: {json.dumps(payload)}\n\n"

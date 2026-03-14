@@ -412,6 +412,7 @@ How retrieval is used:
 
 Proposed APIs:
 - `POST /api/v1/research/chat`
+- `POST /api/v1/research/chat/stream`
 - `GET /api/v1/research/chat/sessions`
 - `GET /api/v1/research/chat/sessions/{session_id}`
 - `DELETE /api/v1/research/chat/sessions/{session_id}`

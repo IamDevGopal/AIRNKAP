@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
@@ -16,6 +17,7 @@ from app.services.research_service import (
     get_chat_session_detail,
     list_user_chat_sessions,
     send_chat_message,
+    stream_chat_message,
 )
 
 router = APIRouter(prefix="/research", tags=["research"])
@@ -31,6 +33,22 @@ def chat_with_research_context(
         db=db,
         current_user=current_user,
         payload=payload,
+    )
+
+
+@router.post("/chat/stream")
+def stream_chat_with_research_context(
+    payload: ChatMessageRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> StreamingResponse:
+    return StreamingResponse(
+        stream_chat_message(
+            db=db,
+            current_user=current_user,
+            payload=payload,
+        ),
+        media_type="text/event-stream",
     )
 
 
