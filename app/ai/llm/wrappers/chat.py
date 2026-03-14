@@ -1,5 +1,5 @@
 from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
 from pydantic import SecretStr
 
@@ -31,26 +31,40 @@ def get_chat_client() -> BaseChatModel:
     )
 
 
-def generate_grounded_answer(*, query_text: str, context_text: str) -> str:
+def generate_grounded_answer(
+    *,
+    query_text: str,
+    context_text: str,
+    chat_history: list[tuple[str, str]] | None = None,
+) -> str:
     chat_model = get_chat_client()
-    response = chat_model.invoke(
-        [
-            SystemMessage(
-                content=(
-                    "You answer questions only using the provided context. "
-                    "If the context is insufficient, clearly say that the answer "
-                    "is not available in the retrieved project knowledge."
-                )
-            ),
-            HumanMessage(
-                content=(
-                    f"Question:\n{query_text}\n\n"
-                    f"Context:\n{context_text}\n\n"
-                    "Return a concise grounded answer."
-                )
-            ),
-        ]
+    messages: list[SystemMessage | HumanMessage | AIMessage] = [
+        SystemMessage(
+            content=(
+                "You answer questions only using the provided context. "
+                "If the context is insufficient, clearly say that the answer "
+                "is not available in the retrieved project knowledge."
+            )
+        )
+    ]
+    if chat_history:
+        for role, content in chat_history:
+            if role == "assistant":
+                messages.append(AIMessage(content=content))
+            elif role == "user":
+                messages.append(HumanMessage(content=content))
+
+    messages.append(
+        HumanMessage(
+            content=(
+                f"Question:\n{query_text}\n\n"
+                f"Context:\n{context_text}\n\n"
+                "Return a concise grounded answer."
+            )
+        )
     )
+
+    response = chat_model.invoke(messages)
 
     if isinstance(response.content, str):
         return response.content.strip()

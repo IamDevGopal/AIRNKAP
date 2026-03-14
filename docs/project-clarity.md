@@ -46,7 +46,8 @@ Current implemented flow:
 Meaning:
 
 - knowledge base prepare ho chuka hai
-- but knowledge ka user-facing consumption system abhi next phase hai
+- knowledge query aur session-aware chat ka base implementation bhi aa chuka hai
+- remaining higher-level consumers abhi next phase me hain
 
 ---
 
@@ -206,6 +207,12 @@ Output:
 - conversational answer
 - citations
 - session history linked response
+
+Current implementation:
+- persisted chat sessions
+- persisted user and assistant messages
+- document scoped chat
+- project scoped chat
 
 ### Clear conclusion
 

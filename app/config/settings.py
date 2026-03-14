@@ -110,6 +110,7 @@ class Settings(BaseSettings):
     chat_temperature: float = Field(default=0.1, alias="CHAT_TEMPERATURE")
     chat_request_timeout_seconds: int = Field(default=60, alias="CHAT_REQUEST_TIMEOUT_SECONDS")
     chat_max_retries: int = Field(default=3, alias="CHAT_MAX_RETRIES")
+    chat_history_messages_limit: int = Field(default=8, alias="CHAT_HISTORY_MESSAGES_LIMIT")
     embedding_batch_size: int = Field(default=32, alias="EMBEDDING_BATCH_SIZE")
     embedding_request_timeout_seconds: int = Field(
         default=30,
@@ -196,6 +197,7 @@ class Settings(BaseSettings):
             "chat_temperature": self.chat_temperature,
             "chat_request_timeout_seconds": self.chat_request_timeout_seconds,
             "chat_max_retries": self.chat_max_retries,
+            "chat_history_messages_limit": self.chat_history_messages_limit,
             "embedding_batch_size": self.embedding_batch_size,
             "embedding_request_timeout_seconds": self.embedding_request_timeout_seconds,
             "embedding_max_retries": self.embedding_max_retries,

@@ -15,6 +15,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database.connection import Base
 
 if TYPE_CHECKING:
+    from app.models.chat_session_model import ChatSession
     from app.models.document_model import Document
 
 
@@ -51,3 +52,6 @@ class Project(Base):
     owner = relationship("User", back_populates="projects")
     workspace = relationship("Workspace", back_populates="projects")
     documents: Mapped[list["Document"]] = relationship("Document", back_populates="project")
+    chat_sessions: Mapped[list["ChatSession"]] = relationship(
+        "ChatSession", back_populates="project"
+    )

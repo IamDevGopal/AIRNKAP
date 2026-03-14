@@ -7,6 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database.connection import Base
 
 if TYPE_CHECKING:
+    from app.models.chat_session_model import ChatSession
     from app.models.document_model import Document
     from app.models.project_model import Project
     from app.models.workspace_model import Workspace
@@ -38,3 +39,4 @@ class User(Base):
     )
     projects: Mapped[list["Project"]] = relationship("Project", back_populates="owner")
     documents: Mapped[list["Document"]] = relationship("Document", back_populates="owner")
+    chat_sessions: Mapped[list["ChatSession"]] = relationship("ChatSession", back_populates="owner")

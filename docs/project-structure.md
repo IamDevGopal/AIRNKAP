@@ -49,6 +49,8 @@ ai-research-platform/
 |   |   |-- project_model.py
 |   |   |-- document_model.py
 |   |   |-- document_chunk_model.py
+|   |   |-- chat_session_model.py
+|   |   |-- chat_message_model.py
 |   |   |-- research_task_model.py
 |   |   `-- report_model.py
 |   |-- schemas/
@@ -64,6 +66,7 @@ ai-research-platform/
 |   |   |-- agent_schema.py
 |   |   `-- response_schema.py
 |   |-- repositories/
+|   |   |-- chat_repository.py
 |   |   |-- user_repository.py
 |   |   |-- workspace_repository.py
 |   |   |-- project_repository.py
