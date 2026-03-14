@@ -99,7 +99,14 @@ Main runtime flow:
 
 `question/task/workflow input -> retrieve -> build context -> consumer module -> result`
 
-Yahi next major system hai jo abhi build hona baaki hai.
+Current status:
+- retrieval system implemented
+- context builder implemented
+- knowledge query implemented
+- session-aware chat implemented
+- research task execution implemented
+- research-task-driven report generation implemented
+- automation/workflow layer implemented
 
 ---
 
@@ -483,6 +490,14 @@ Proposed APIs:
 How retrieval is used:
 - workflow execution ke andar retrieval/context same reusable system se aayega
 
+Current implementation:
+- workflow create/list/run/pause
+- supported workflow actions:
+  - knowledge query
+  - research task execution
+  - report generation
+- workflow run history persistence
+
 ---
 
 ## 11. Query Loop vs Research Loop vs Report Loop
@@ -534,9 +549,9 @@ Conclusion:
 
 ---
 
-## 13. Immediate Next Build Priority
+## 13. Current Implemented vs Pending Scope
 
-Current priority should be:
+### Implemented
 
 1. retrieval system
 2. context builder
@@ -544,10 +559,23 @@ Current priority should be:
 4. chat module
 5. research task module
 6. report generation module
+7. knowledge operations module
+   - document status
+   - document chunks
+   - document reindex
+   - project reindex
+8. automation / workflow module
+
+### Pending
+
+1. n8n integration
+2. agent layer
+3. MCP tool layer
+4. DuckDB analytics layer
 
 Reason:
-- knowledge base already ready hai
-- ab product value tab aayegi jab prepared knowledge ka actual usage layer banega
+- common intelligence consumers ka core application layer ready hai
+- remaining work higher-level orchestration aur tooling layers ka hai
 
 ---
 
@@ -557,6 +585,10 @@ Abhi tak:
 
 - `knowledge prepare karne wala system` ban chuka hai
 
-Ab next:
+Current state:
 
-- `same prepared knowledge ko query, chat, research, report, agents, MCP, aur automation me reuse karne wala shared retrieval/context system` banana hai
+- `prepared knowledge ko query, chat, research tasks, reports, knowledge operations, aur automation workflows me reuse karne wala shared retrieval/context system` implement ho chuka hai
+
+Remaining next state:
+
+- `same base ko agents, MCP, n8n, aur analytics layers me extend karna hai`

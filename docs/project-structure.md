@@ -9,6 +9,7 @@ ai-research-platform/
 |   |-- api/
 |   |   |-- router.py
 |   |   `-- v1/
+|   |       |-- automation_routes.py
 |   |       |-- auth_routes.py
 |   |       |-- user_routes.py
 |   |       |-- workspace_routes.py
@@ -44,6 +45,8 @@ ai-research-platform/
 |   |   `-- sqlite/
 |   |       `-- metadata_db.py
 |   |-- models/
+|   |   |-- automation_workflow_model.py
+|   |   |-- automation_workflow_run_model.py
 |   |   |-- user_model.py
 |   |   |-- workspace_model.py
 |   |   |-- project_model.py
@@ -54,6 +57,7 @@ ai-research-platform/
 |   |   |-- research_task_model.py
 |   |   `-- report_model.py
 |   |-- schemas/
+|   |   |-- automation_schema.py
 |   |   |-- auth_schema.py
 |   |   |-- user_schema.py
 |   |   |-- workspace_schema.py
@@ -66,6 +70,7 @@ ai-research-platform/
 |   |   |-- agent_schema.py
 |   |   `-- response_schema.py
 |   |-- repositories/
+|   |   |-- automation_repository.py
 |   |   |-- chat_repository.py
 |   |   |-- user_repository.py
 |   |   |-- workspace_repository.py
@@ -74,6 +79,7 @@ ai-research-platform/
 |   |   |-- research_repository.py
 |   |   `-- report_repository.py
 |   |-- services/
+|   |   |-- automation_service.py
 |   |   |-- auth_service.py
 |   |   |-- user_service.py
 |   |   |-- workspace_service.py
@@ -120,6 +126,7 @@ ai-research-platform/
 |   |   |-- async_jobs.py
 |   |   |-- background_workers.py
 |   |   |-- celery_app.py
+|   |   |-- document_dispatch.py
 |   |   `-- document_ingestion_tasks.py
 |   `-- utils/
 |       `-- helpers.py
