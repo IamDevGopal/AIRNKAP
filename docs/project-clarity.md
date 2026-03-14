@@ -47,6 +47,7 @@ Meaning:
 
 - knowledge base prepare ho chuka hai
 - knowledge query aur session-aware chat ka base implementation bhi aa chuka hai
+- research task lifecycle ka base implementation bhi aa chuka hai
 - remaining higher-level consumers abhi next phase me hain
 
 ---
@@ -434,6 +435,12 @@ Proposed APIs:
 How retrieval is used:
 - task run hone par task type ke hisab se retrieval chalega
 - same retrieved context ko task-specific transformation me use kiya jayega
+
+Current implementation:
+- task create/list/get
+- synchronous task run
+- task cancel before execution completion
+- document scoped and project scoped research tasks
 
 ### D. Report APIs
 

@@ -53,6 +53,28 @@ def generate_grounded_answer(
     return str(response.content).strip()
 
 
+def generate_contextual_response(
+    *,
+    system_instruction: str,
+    user_instruction: str,
+    context_text: str,
+    response_instruction: str = "Return a concise grounded answer.",
+    chat_history: list[tuple[str, str]] | None = None,
+) -> str:
+    chat_model = get_chat_client()
+    messages = _build_messages(
+        system_instruction=system_instruction,
+        user_instruction=user_instruction,
+        context_text=context_text,
+        response_instruction=response_instruction,
+        chat_history=chat_history,
+    )
+    response = chat_model.invoke(messages)
+    if isinstance(response.content, str):
+        return response.content.strip()
+    return str(response.content).strip()
+
+
 def stream_grounded_answer(
     *,
     query_text: str,
@@ -60,9 +82,15 @@ def stream_grounded_answer(
     chat_history: list[tuple[str, str]] | None = None,
 ) -> Iterator[str]:
     chat_model = get_chat_client()
-    messages = _build_grounded_messages(
-        query_text=query_text,
+    messages = _build_messages(
+        system_instruction=(
+            "You answer questions only using the provided context. "
+            "If the context is insufficient, clearly say that the answer "
+            "is not available in the retrieved project knowledge."
+        ),
+        user_instruction=f"Question:\n{query_text}",
         context_text=context_text,
+        response_instruction="Return a concise grounded answer.",
         chat_history=chat_history,
     )
 
@@ -78,14 +106,29 @@ def _build_grounded_messages(
     context_text: str,
     chat_history: list[tuple[str, str]] | None,
 ) -> list[SystemMessage | HumanMessage | AIMessage]:
+    return _build_messages(
+        system_instruction=(
+            "You answer questions only using the provided context. "
+            "If the context is insufficient, clearly say that the answer "
+            "is not available in the retrieved project knowledge."
+        ),
+        user_instruction=f"Question:\n{query_text}",
+        context_text=context_text,
+        response_instruction="Return a concise grounded answer.",
+        chat_history=chat_history,
+    )
+
+
+def _build_messages(
+    *,
+    system_instruction: str,
+    user_instruction: str,
+    context_text: str,
+    response_instruction: str,
+    chat_history: list[tuple[str, str]] | None,
+) -> list[SystemMessage | HumanMessage | AIMessage]:
     messages: list[SystemMessage | HumanMessage | AIMessage] = [
-        SystemMessage(
-            content=(
-                "You answer questions only using the provided context. "
-                "If the context is insufficient, clearly say that the answer "
-                "is not available in the retrieved project knowledge."
-            )
-        )
+        SystemMessage(content=system_instruction)
     ]
     if chat_history:
         for role, content in chat_history:
@@ -96,11 +139,7 @@ def _build_grounded_messages(
 
     messages.append(
         HumanMessage(
-            content=(
-                f"Question:\n{query_text}\n\n"
-                f"Context:\n{context_text}\n\n"
-                "Return a concise grounded answer."
-            )
+            content=(f"{user_instruction}\n\nContext:\n{context_text}\n\n{response_instruction}")
         )
     )
     return messages
